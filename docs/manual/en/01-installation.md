@@ -36,8 +36,8 @@ cd swarmind
 ./start.sh
 ```
 
-`start.sh` creates `.env` from `.env.example` with a random `ENCRYPTION_KEY`, `POSTGRES_PASSWORD`
-and `CHROMA_TOKEN`, runs `docker compose up -d --build` and waits for the backend.
+`start.sh` creates `.env` from `.env.example` with a random `ENCRYPTION_KEY`, `POSTGRES_PASSWORD`,
+`CHROMA_TOKEN` and `REDIS_PASSWORD`, runs `docker compose up -d --build` and waits for the backend.
 
 To do it by hand:
 
@@ -47,7 +47,8 @@ chmod 600 .env
 # Required: a Fernet key (32 url-safe base64 bytes)
 python3 -c "import base64,os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
 #   or: openssl rand -base64 32 | tr '+/' '-_'
-# Paste it as ENCRYPTION_KEY=... and replace POSTGRES_PASSWORD and CHROMA_TOKEN with random values
+# Paste it as ENCRYPTION_KEY=... and replace POSTGRES_PASSWORD, CHROMA_TOKEN and REDIS_PASSWORD
+# with random values (REDIS_PASSWORD: letters and digits only, e.g. openssl rand -hex 32)
 docker compose up -d --build
 docker compose ps        # every service "healthy" or "running" after a minute or two
 ```
@@ -80,6 +81,42 @@ docker compose up -d backend
 
 `FRONTEND_URL` is the only origin accepted by CORS and by the WebSocket. A mismatch shows up as
 failed API calls or a progress bar that never moves.
+
+### Client IP and `TRUSTED_PROXY_COUNT`
+
+The sign-in limits count failures per client IP, which the backend reads from `X-Forwarded-For`.
+`TRUSTED_PROXY_COUNT` is the number of proxies between the client and the backend:
+
+- **1 (default)**: the host proxy sends `/api/` and `/socket.io/` straight to the backend
+  (`127.0.0.1:5001`) and only the rest to the frontend; or there is no host proxy and the browser
+  reaches the frontend container, whose nginx forwards to the backend.
+- **2**: requests go through the host proxy *and* the frontend container's nginx, as in the Caddy
+  and nginx examples below (everything to `127.0.0.1:3000`).
+
+With nginx, the direct layout replaces the two API locations of the example below with:
+
+```nginx
+    location /api/ {
+        proxy_pass http://127.0.0.1:5001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+    }
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:5001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_read_timeout 300s;
+    }
+```
+
+**Never set a value higher than the real number of proxies.** The backend would then trust an entry
+of `X-Forwarded-For` written by the client itself: anyone could pick a new IP for each attempt and
+bypass the per-IP sign-in limit. A value lower than the real number only makes every user share the
+IP of the last proxy, and so one per-IP counter.
 
 ### Caddy
 
@@ -154,6 +191,8 @@ docker compose up -d
 
 Read `CHANGELOG.md` before upgrading and take a backup ([chapter 8](08-operations.md)).
 New releases may add settings to `.env.example`: compare it with your `.env`.
+Upgrading from 1.0.0: set `REDIS_PASSWORD` and recreate Redis before the migrations
+([chapter 8](08-operations.md#upgrading-from-100-redis-password)).
 
 ## Uninstall
 

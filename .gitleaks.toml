@@ -1,0 +1,13 @@
+# Secret scan (gitleaks, run by .github/workflows/ci.yml): the default rules, plus an allowlist for the
+# placeholder ENCRYPTION_KEY of the tests. It is the base64 of "for-tests-only-not-a-real-key-00" and is
+# never used outside tests. Add here only values that are certainly not secrets, never a real key.
+title = "SwarMind gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Test-only placeholders"
+regexes = [
+  '''Zm9yLXRlc3RzLW9ubHktbm90LWEtcmVhbC1rZXktMDA=''',
+]

@@ -464,6 +464,8 @@ errors:
   token_missing: "Token mancante"
   token_expired: "Token scaduto"
   token_invalid: "Token non valido"
+  token_revoked: "La sessione è terminata perché la password è cambiata. Accedi di nuovo."
+  too_many_attempts: "Troppi tentativi falliti. Riprova tra {minutes} min."
   user_not_found_or_disabled: "Utente non trovato o disabilitato"
   access_denied: "Accesso negato"
   no_active_plan: "Nessun piano attivo"
@@ -494,6 +496,7 @@ errors:
   plan_excludes_provider: "Il tuo piano non include il provider {provider}"
   # graph / progetti
   project_limit: "Limite progetti raggiunto ({max}). Contattaci per cambiare piano."
+  graph_system_key_limit: "Hai usato le {limit} costruzioni del grafo al mese disponibili con la chiave di sistema condivisa. Aggiungi una tua chiave in Connessioni AI per costruirne altre."
   billing_disabled: "I piani non sono disponibili in questa installazione."
   no_file: "Nessun file caricato"
   unsupported_format: "Formato non supportato. Usa: {formats}"

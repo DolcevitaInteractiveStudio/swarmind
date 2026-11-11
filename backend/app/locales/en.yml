@@ -464,6 +464,8 @@ errors:
   token_missing: "Missing token"
   token_expired: "Token expired"
   token_invalid: "Invalid token"
+  token_revoked: "Your session has ended because the password changed. Sign in again."
+  too_many_attempts: "Too many failed attempts. Try again in {minutes} min."
   user_not_found_or_disabled: "User not found or disabled"
   access_denied: "Access denied"
   no_active_plan: "No active plan"
@@ -494,6 +496,7 @@ errors:
   plan_excludes_provider: "Your plan does not include the provider {provider}"
   # graph / projects
   project_limit: "Project limit reached ({max}). Contact us to change plan."
+  graph_system_key_limit: "You have used the {limit} graph builds per month available on the shared system key. Add your own provider key in AI connections to build more."
   billing_disabled: "Plans are not available on this installation."
   no_file: "No file uploaded"
   unsupported_format: "Unsupported format. Use: {formats}"

@@ -13,6 +13,7 @@ from datetime import datetime, timezone, timedelta
 import jwt
 from flask import Blueprint, request, jsonify, g, current_app
 
+from app.core import login_throttle as throttle
 from app.core.i18n import api_error
 from app.models import db, User, Plan, Subscription
 from app.models.audit import AuditLog
@@ -22,8 +23,11 @@ auth_bp = Blueprint("auth", __name__)
 # ── Helper JWT ─────────────────────────────────────────────────────────────────
 
 def _make_token(user_id: str, expires_hours: int = 24) -> str:
+    """JWT for the user, with its current token_version ("tv"): a password change invalidates it."""
+    user = db.session.get(User, user_id)
     payload = {
         "sub": user_id,
+        "tv": (user.token_version or 0) if user else 0,
         "iat": datetime.now(timezone.utc),
         "exp": datetime.now(timezone.utc) + timedelta(hours=expires_hours),
     }
@@ -50,9 +54,16 @@ def login_required(f):
             return jsonify({"error": api_error("token_expired")}), 401
         except jwt.InvalidTokenError:
             return jsonify({"error": api_error("token_invalid")}), 401
-        user = User.query.get(payload["sub"])
+        user = db.session.get(User, payload["sub"])
         if not user or not user.is_active:
             return jsonify({"error": api_error("user_not_found_or_disabled")}), 401
+        # Issued before the last password change or reset. Tokens without "tv" predate token_version: version 0
+        try:
+            token_version = int(payload.get("tv", 0))
+        except (TypeError, ValueError):
+            return jsonify({"error": api_error("token_invalid")}), 401
+        if token_version != (user.token_version or 0):
+            return jsonify({"error": api_error("token_revoked")}), 401
         g.current_user = user
         return f(*args, **kwargs)
     return decorated
@@ -119,9 +130,15 @@ def login():
     if not isinstance(email, str) or not isinstance(password, str) or not email or not password:
         return jsonify({"error": api_error("email_password_required")}), 400
     email = email.strip().lower()
+    # Per-IP and per-account limits on failed attempts (core/login_throttle.py)
+    wait = throttle.blocked_for("login", request.remote_addr, email)
+    if wait:
+        return throttle.too_many_attempts(wait)
     user = User.query.filter_by(email=email).first()
     if not user or not user.check_password(password):
+        throttle.record_failure("login", request.remote_addr, email)
         return jsonify({"error": api_error("invalid_credentials")}), 401
+    throttle.clear_account("login", email)
     if not user.is_active:
         return jsonify({"error": api_error("account_disabled")}), 403
     user.last_login = datetime.now(timezone.utc)
@@ -147,10 +164,21 @@ def update_profile():
     if "avatar_url" in data:
         user.avatar_url = data["avatar_url"]
     if "new_password" in data and data.get("current_password"):
+        # The current password is checked like a login: same limits, counted apart
+        wait = throttle.blocked_for("password", request.remote_addr, user.id)
+        if wait:
+            return throttle.too_many_attempts(wait)
         if not user.check_password(data["current_password"]):
+            throttle.record_failure("password", request.remote_addr, user.id)
             return jsonify({"error": api_error("wrong_current_password")}), 400
+        throttle.clear_account("password", user.id)
         if len(data["new_password"]) < 8:
             return jsonify({"error": api_error("new_password_min_length")}), 400
         user.set_password(data["new_password"])
+        AuditLog.log("user_password_changed", user_id=user.id, ip_address=request.remote_addr)
     db.session.commit()
-    return jsonify(user.to_dict()), 200
+    body = user.to_dict()
+    if "new_password" in data and data.get("current_password"):
+        # The other sessions are signed out; this one gets a token with the new version
+        body = {**body, "token": _make_token(user.id)}
+    return jsonify(body), 200

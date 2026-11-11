@@ -65,9 +65,42 @@ a root nel tuo checkout (vedi `docs/runbooks/deploy-file-ownership.md`).
   `docker compose exec postgres psql -U swarmind -c "ALTER USER swarmind PASSWORD 'new-value'"`,
   aggiorna `.env`, poi `docker compose up -d`.
 - `CHROMA_TOKEN`, `FLOWER_PASSWORD`: aggiorna `.env` ed esegui `docker compose up -d`.
+- `REDIS_PASSWORD`: aggiorna `.env`, poi `docker compose up -d redis backend worker` (e `flower`).
 - `SECRET_KEY`: cambiarla disconnette tutti gli utenti.
 - `ENCRYPTION_KEY`: cambiarla rende illeggibili tutte le chiavi dei provider salvate; gli utenti devono ricollegare
   le proprie chiavi. Cambia anche la `SECRET_KEY` derivata, quando questa è vuota.
+
+## Aggiornamento dalla 1.0.0: password di Redis
+
+Ora Redis richiede una password. In un'installazione esistente, prima di `docker compose up -d`:
+
+1. Aggiungi `REDIS_PASSWORD` a `.env`, solo lettere e cifre (finisce dentro un URL):
+   `echo "REDIS_PASSWORD=$(openssl rand -hex 32)" >> .env`. `./start.sh` ne aggiunge una se manca.
+2. Ricrea prima Redis, quando non ci sono simulazioni in corso: `docker compose up -d --no-deps redis`.
+   Poi aggiorna come al solito: migrazioni (`docker compose run --rm backend flask --app run db upgrade`)
+   e `docker compose up -d`. L'ordine conta: l'app, compreso il comando delle migrazioni, si rifiuta di
+   partire finché Redis gira ancora senza password.
+
+Senza l'impostazione Compose si ferma con `Set REDIS_PASSWORD in .env`. Se Redis e l'app non sono
+d'accordo (Redis non ricreato, o una password diversa), backend e worker si rifiutano di partire e il
+log dice quale lato correggere. Il volume di Redis conserva i suoi dati.
+
+## Protezione degli accessi
+
+- I controlli di password falliti, all'accesso e al cambio password, sono limitati per account
+  (`LOGIN_MAX_FAILURES_PER_ACCOUNT`, default 5) e per IP del client (`LOGIN_MAX_FAILURES_PER_IP`,
+  default 30) in una finestra di `LOGIN_THROTTLE_WINDOW_SECONDS` (default 900). Oltre un limite la risposta
+  è "Troppi tentativi falliti" fino alla fine della finestra; un accesso riuscito azzera il contatore
+  dell'account. `0` disattiva un limite. I contatori stanno in Redis; se Redis non risponde l'accesso
+  funziona comunque.
+- L'IP del client viene da `X-Forwarded-For`. `TRUSTED_PROXY_COUNT` è il numero di proxy tra il client e
+  il backend: `1` (default) quando il proxy sull'host manda `/api/` e `/socket.io/` direttamente al backend,
+  o senza proxy sull'host; `2` quando le richieste passano anche dal nginx del container frontend
+  ([capitolo 1](01-installation.md#ip-del-client-e-trusted_proxy_count)). Un valore più alto del numero reale
+  permette ai client di falsificare `X-Forwarded-For` e aggirare il limite per IP; uno più basso fa
+  condividere a tutti gli utenti un unico contatore.
+- Un cambio password (Profilo, o `create-superadmin --reset-password`) disconnette tutte le altre sessioni
+  di quell'utente.
 
 ## Chroma
 

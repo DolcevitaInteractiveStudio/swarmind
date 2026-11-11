@@ -71,6 +71,18 @@ def user_has_llm_access(user_id: str) -> bool:
     return LLMCredential.query.filter_by(user_id=user_id, is_active=True).first() is not None
 
 
+def own_credential(user_id: str, provider: str | None = None):
+    """The user's own active credential for a build: one of provider if there is one, else any (oldest first).
+    None when the user has no active credential: the build would use the system key."""
+    from app.models import LLMCredential
+    active = LLMCredential.query.filter_by(user_id=user_id, is_active=True).order_by(LLMCredential.created_at)
+    if provider:
+        match = active.filter_by(provider=provider).first()
+        if match:
+            return match
+    return active.first()
+
+
 def config_for_user(user_id: str | None, provider: str | None = None,
                     credential_id: str | None = None) -> LLMConfig:
     """

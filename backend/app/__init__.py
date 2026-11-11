@@ -40,10 +40,22 @@ celery_app.conf.update(
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    # Client IP from X-Forwarded-For, set by the trusted proxies only (TRUSTED_PROXY_COUNT, proxies between
+    # client and backend): the login throttling counts failures per IP, and without this every request has
+    # the IP of the last proxy
+    proxies = int(app.config.get("TRUSTED_PROXY_COUNT", 1) or 0)
+    if proxies > 0:
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=proxies)
     CORS(app, origins=[app.config["FRONTEND_URL"]], supports_credentials=True)
     db.init_app(app)
     migrate.init_app(app, db)
     redis_url = app.config.get('REDIS_URL', _redis_url)
+    # Redis with a password (REDIS_PASSWORD) and a REDIS_URL without it, or the opposite: refuse to start with
+    # the reason, instead of failing later on every request. Backend, worker and Flower all pass here
+    if not app.config.get("TESTING"):
+        from .core.redis_check import ensure_redis_password
+        ensure_redis_password(redis_url)
     # Stessa origine di CORS: FRONTEND_URL (prima '*', in contrasto con .env.example)
     socketio.init_app(app, cors_allowed_origins=[app.config["FRONTEND_URL"]], async_mode='gevent',
                       message_queue=redis_url)

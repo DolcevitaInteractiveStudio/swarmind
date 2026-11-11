@@ -33,9 +33,12 @@ services:
       - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
+    # Password required (REDIS_PASSWORD in .env): backend, worker and Flower put it in their REDIS_URL
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -78,7 +81,7 @@ services:
     env_file: .env
     environment:
       - DATABASE_URL=postgresql://swarmind:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/swarmind
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}@redis:6379/0
       - CHROMA_HOST=chroma
       - CHROMA_PORT=8000
       - CHROMA_TOKEN=${CHROMA_TOKEN:?Set CHROMA_TOKEN in .env}
@@ -113,12 +116,12 @@ services:
     env_file: .env
     environment:
       - DATABASE_URL=postgresql://swarmind:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/swarmind
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}@redis:6379/0
       - CHROMA_HOST=chroma
       - CHROMA_PORT=8000
       - CHROMA_TOKEN=${CHROMA_TOKEN:?Set CHROMA_TOKEN in .env}
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}@redis:6379/0
       # No root-owned __pycache__ in the bind-mounted ./backend (it blocks git checkout on the host)
       - PYTHONDONTWRITEBYTECODE=1
     volumes:
@@ -158,7 +161,8 @@ services:
     environment:
       # Flower imports the Flask app (app.celery_app): same database as backend and worker
       - DATABASE_URL=postgresql://swarmind:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/swarmind
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}@redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}@redis:6379/0
     depends_on:
       - redis
       - worker

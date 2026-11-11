@@ -62,7 +62,7 @@ services. The manual way:
 cp .env.example .env
 # ENCRYPTION_KEY is required; generate one and paste it into .env:
 python3 -c "import base64,os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
-# also replace POSTGRES_PASSWORD and CHROMA_TOKEN with random values
+# also replace POSTGRES_PASSWORD, CHROMA_TOKEN and REDIS_PASSWORD with random values
 docker compose up -d --build
 ```
 
@@ -87,12 +87,15 @@ Everything is in `.env`; [`.env.example`](.env.example) documents every setting.
 |---|---|
 | `ENCRYPTION_KEY` | Required. Encrypts the stored provider keys. Back it up; never change it casually |
 | `SECRET_KEY` | Signs login tokens. Empty: derived from `ENCRYPTION_KEY` |
-| `POSTGRES_PASSWORD`, `CHROMA_TOKEN` | Internal service credentials |
+| `POSTGRES_PASSWORD`, `CHROMA_TOKEN`, `REDIS_PASSWORD` | Internal service credentials |
+| `TRUSTED_PROXY_COUNT` | Proxies between client and backend: `1` (default) if the host proxy sends `/api/` straight to the backend, `2` if requests also pass through the frontend container. Never higher than the real number: clients could spoof their IP |
+| `LOGIN_MAX_FAILURES_PER_ACCOUNT`, `LOGIN_MAX_FAILURES_PER_IP` | Failed sign-ins allowed per account and per IP in 15 minutes |
 | `FRONTEND_URL` | Public URL of the app (CORS and WebSocket origin) |
 | `SIMULATION_DEFAULT_LANGUAGE` | `en` or `it` |
 | `KB_EMBEDDING` | Empty for multilingual-e5-small, `default` for Chroma's built-in model |
 | `CONTACT_EMAIL`, `BILLING_ENABLED` | Landing page contact; plan and billing pages |
 | `GROQ_API_KEY` | Optional system key for users without keys of their own |
+| `GRAPH_SYSTEM_KEY_MONTHLY_LIMIT` | Graph builds per user and month on the system key (default 20) |
 
 ## LLM providers
 
@@ -115,6 +118,9 @@ docker compose up -d
 
 Read [CHANGELOG.md](CHANGELOG.md) first, and back up before upgrading:
 [Operations](docs/manual/en/08-operations.md).
+Upgrading from 1.0.0: add `REDIS_PASSWORD` to `.env` and run `docker compose up -d --no-deps redis` before the
+migrations
+([Operations](docs/manual/en/08-operations.md#upgrading-from-100-redis-password)).
 
 ## Documentation
 

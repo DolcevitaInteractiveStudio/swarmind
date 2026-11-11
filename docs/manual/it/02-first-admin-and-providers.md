@@ -84,3 +84,9 @@ modelli indicati in `GROQ_MODEL_HEAVY`, `GROQ_MODEL_AGENT` e `GROQ_MODEL_FAST`. 
 deve usare la propria chiave. In quel caso "Default sistema (Groq)" non viene proposto, e un utente senza
 connessione vede un invito ad aprire **Connessioni AI**: non si possono creare progetti né simulazioni
 finché non viene collegata una chiave.
+
+La costruzione del knowledge graph (caricamento e ricostruzione di un progetto) usa sempre la chiave
+dell'utente quando ne ha una. Con la chiave di sistema ogni utente può costruire al massimo
+`GRAPH_SYSTEM_KEY_MONTHLY_LIMIT` grafi al mese (default 20, stesso periodo mensile della quota di simulazioni;
+`-1` nessun limite, `0` mai con la chiave di sistema). Oltre il limite il caricamento viene rifiutato con un
+messaggio che rimanda a **Connessioni AI**.

@@ -14,6 +14,8 @@ Start with `docker compose ps` and `docker compose logs --tail 200 backend worke
 | Chroma stays `unhealthy` | Look at `docker compose logs chroma`. Too few open files: the Compose file sets `ulimits.nofile` to 65536, check that your Docker daemon allows it |
 | Postgres: `password authentication failed` after changing `POSTGRES_PASSWORD` | The password is set only when the volume is created; change it in the database too ([Operations](08-operations.md#changing-secrets)) |
 | Flower restarts with `Set FLOWER_PASSWORD in .env` | Set `FLOWER_PASSWORD`, or remove `monitoring` from `COMPOSE_PROFILES` |
+| `required variable REDIS_PASSWORD is missing a value` | Install from before the Redis password: add it ([Operations](08-operations.md#upgrading-from-100-redis-password)) |
+| Backend or worker exits with `SwarMind cannot start: Redis ...` | Redis and `.env` disagree on the password. Set `REDIS_PASSWORD`, then `docker compose up -d redis backend worker` |
 
 ## Signing in and the browser
 
@@ -22,6 +24,8 @@ Start with `docker compose ps` and `docker compose logs --tail 200 backend worke
 | No account exists yet | Create the superadmin: `docker compose exec backend flask --app run create-superadmin --email …` |
 | Forgotten superadmin password | Same command with `--reset-password` |
 | Everyone signed out after an update | `SECRET_KEY` (or `ENCRYPTION_KEY`, when `SECRET_KEY` is empty) changed: sign in again |
+| "Too many failed attempts. Try again in N min." | The sign-in limit of the account or of the IP was reached: wait. If every user hits it at once, `TRUSTED_PROXY_COUNT` is lower than the proxies in front of the backend ([Installation](01-installation.md#client-ip-and-trusted_proxy_count)) |
+| "Your session has ended because the password changed" | The password was changed in another session or reset: sign in with the new one |
 | API calls fail with CORS errors, or progress never updates | `FRONTEND_URL` does not match the address in the browser (scheme, host and port). Fix it and `docker compose up -d backend` |
 | Live progress missing behind a proxy | The proxy does not pass WebSocket upgrades on `/socket.io/` ([reverse proxy](01-installation.md#behind-a-reverse-proxy)) |
 | Upload fails with 413 | The reverse proxy limits the request size: raise `client_max_body_size` (nginx) or `request_body max_size` (Caddy) |
@@ -36,6 +40,7 @@ Start with `docker compose ps` and `docker compose logs --tail 200 backend worke
 | Simulation fails with a provider error (credit, rate limit, model not found) | The message in the simulation names the provider's answer. Check credit and model name, then run again; a failed simulation gives its quota back |
 | Simulation shown as running forever after a crash | At start-up the worker closes simulations with no live task older than `STALE_SIMULATION_MINUTES`: `docker compose restart worker` |
 | Log line `kb_embedding_fallback` | The e5 model could not be downloaded (no access to Hugging Face). Allow outbound HTTPS, or set `KB_EMBEDDING=default` |
+| "You have used the N graph builds per month available on the shared system key" | The user has no key of their own: connect one in **AI connections**, or raise `GRAPH_SYSTEM_KEY_MONTHLY_LIMIT` |
 | Echo-chamber metric reports `fallback_jaccard` | Chroma's ONNX model did not load (download blocked); the metric falls back to word overlap |
 
 ## Getting help

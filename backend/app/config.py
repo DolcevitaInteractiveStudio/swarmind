@@ -30,6 +30,16 @@ class Config:
 
     REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")
 
+    # Failed password checks (login, password change) per window: per account and per client IP.
+    # Over a limit the endpoint answers 429 until the window ends. 0 turns a limit off (core/login_throttle.py)
+    LOGIN_THROTTLE_WINDOW_SECONDS  = int(os.environ.get("LOGIN_THROTTLE_WINDOW_SECONDS", "900"))
+    LOGIN_MAX_FAILURES_PER_ACCOUNT = int(os.environ.get("LOGIN_MAX_FAILURES_PER_ACCOUNT", "5"))
+    LOGIN_MAX_FAILURES_PER_IP      = int(os.environ.get("LOGIN_MAX_FAILURES_PER_IP", "30"))
+    # Proxies between the client and the backend (X-Forwarded-For): 1 when a host proxy sends /api/ straight to
+    # the backend, or with only the frontend's nginx; 2 through a host proxy AND the frontend's nginx. Never
+    # higher than the real number: the client could spoof its IP and bypass the per-IP limit
+    TRUSTED_PROXY_COUNT = int(os.environ.get("TRUSTED_PROXY_COUNT", "1"))
+
     CHROMA_HOST = os.environ.get("CHROMA_HOST", "chroma")
     CHROMA_PORT = int(os.environ.get("CHROMA_PORT", "8000"))
     CHROMA_TOKEN = os.environ.get("CHROMA_TOKEN", "")
@@ -58,6 +68,9 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "").strip() or _derived_secret_key(_ENCRYPTION_KEY)
 
     GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+    # Graph builds per user and per month on the system key (GROQ_API_KEY), for users with no provider key of
+    # their own: with one, the build always uses it. -1 no limit, 0 never on the system key
+    GRAPH_SYSTEM_KEY_MONTHLY_LIMIT = int(os.environ.get("GRAPH_SYSTEM_KEY_MONTHLY_LIMIT", "20"))
     GROQ_MODEL_HEAVY = os.environ.get("GROQ_MODEL_HEAVY", "llama-3.3-70b-versatile")
     GROQ_MODEL_AGENT = os.environ.get("GROQ_MODEL_AGENT", "openai/gpt-oss-20b")
     GROQ_MODEL_FAST  = os.environ.get("GROQ_MODEL_FAST",  "llama-3.1-8b-instant")

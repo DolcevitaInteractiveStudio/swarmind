@@ -65,9 +65,41 @@ by root in your checkout (see `docs/runbooks/deploy-file-ownership.md`).
   `docker compose exec postgres psql -U swarmind -c "ALTER USER swarmind PASSWORD 'new-value'"`,
   update `.env`, then `docker compose up -d`.
 - `CHROMA_TOKEN`, `FLOWER_PASSWORD`: update `.env` and `docker compose up -d`.
+- `REDIS_PASSWORD`: update `.env`, then `docker compose up -d redis backend worker` (and `flower`).
 - `SECRET_KEY`: changing it signs everyone out.
 - `ENCRYPTION_KEY`: changing it makes every stored provider key unreadable; users must connect
   their keys again. It also changes the derived `SECRET_KEY` when that is empty.
+
+## Upgrading from 1.0.0: Redis password
+
+Redis now requires a password. On an existing install, before `docker compose up -d`:
+
+1. Add `REDIS_PASSWORD` to `.env`, letters and digits only (it goes inside a URL):
+   `echo "REDIS_PASSWORD=$(openssl rand -hex 32)" >> .env`. `./start.sh` adds one if it is missing.
+2. Recreate Redis first, when no simulation is running: `docker compose up -d --no-deps redis`.
+   Then upgrade as usual: migrations (`docker compose run --rm backend flask --app run db upgrade`)
+   and `docker compose up -d`. The order matters: the app, the migration command included, refuses
+   to start while Redis still runs without the password.
+
+Without the setting Compose stops with `Set REDIS_PASSWORD in .env`. If Redis and the app disagree
+(Redis not recreated, or a different password), the backend and the worker refuse to start and the
+log says which side to fix. The Redis volume keeps its data.
+
+## Sign-in protection
+
+- Failed password checks, on sign-in and on a password change, are limited per account
+  (`LOGIN_MAX_FAILURES_PER_ACCOUNT`, default 5) and per client IP (`LOGIN_MAX_FAILURES_PER_IP`,
+  default 30) in a window of `LOGIN_THROTTLE_WINDOW_SECONDS` (default 900). Past a limit the answer is
+  "Too many failed attempts" until the window ends; a successful sign-in clears the account counter.
+  `0` turns a limit off. The counters live in Redis; if Redis does not answer, sign-in still works.
+- The client IP comes from `X-Forwarded-For`. `TRUSTED_PROXY_COUNT` is the number of proxies between
+  the client and the backend: `1` (default) when the host proxy sends `/api/` and `/socket.io/` straight
+  to the backend, or with no host proxy; `2` when requests also pass through the frontend container's
+  nginx ([chapter 1](01-installation.md#client-ip-and-trusted_proxy_count)). Higher than the real number
+  lets clients spoof `X-Forwarded-For` and bypass the per-IP limit; lower makes every user share one
+  IP counter.
+- A password change (Profile, or `create-superadmin --reset-password`) signs out every other session
+  of that user.
 
 ## Chroma
 

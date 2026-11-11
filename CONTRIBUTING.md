@@ -25,6 +25,10 @@ the Vite dev server (`cd frontend && npm install && npm run dev`) with a proxy t
 
 ## Tests and checks
 
+GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the checks below on every
+pull request and every push to `main`, the migration tests on PostgreSQL included, plus a gitleaks
+secret scan ([`.gitleaks.toml`](.gitleaks.toml)). Run them locally before pushing.
+
 Backend (inside the backend image, or a virtualenv with `requirements.txt -c constraints.txt`):
 
 ```bash
