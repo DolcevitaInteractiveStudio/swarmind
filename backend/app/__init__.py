@@ -40,6 +40,12 @@ celery_app.conf.update(
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    # Client IP from X-Forwarded-For, set by the trusted proxies only (TRUSTED_PROXY_COUNT): the login
+    # throttling counts failures per IP, and without this every request has the IP of the frontend's nginx
+    proxies = int(app.config.get("TRUSTED_PROXY_COUNT", 1) or 0)
+    if proxies > 0:
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=proxies)
     CORS(app, origins=[app.config["FRONTEND_URL"]], supports_credentials=True)
     db.init_app(app)
     migrate.init_app(app, db)

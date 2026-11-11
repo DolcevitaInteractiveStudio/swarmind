@@ -449,6 +449,7 @@ errors:
   token_missing: "Token mancante"
   token_expired: "Token scaduto"
   token_invalid: "Token non valido"
+  too_many_attempts: "Troppi tentativi falliti. Riprova tra {minutes} min."
   user_not_found_or_disabled: "Utente non trovato o disabilitato"
   access_denied: "Accesso negato"
   no_active_plan: "Nessun piano attivo"

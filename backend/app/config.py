@@ -30,6 +30,15 @@ class Config:
 
     REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")
 
+    # Failed password checks (login, password change) per window: per account and per client IP.
+    # Over a limit the endpoint answers 429 until the window ends. 0 turns a limit off (core/login_throttle.py)
+    LOGIN_THROTTLE_WINDOW_SECONDS  = int(os.environ.get("LOGIN_THROTTLE_WINDOW_SECONDS", "900"))
+    LOGIN_MAX_FAILURES_PER_ACCOUNT = int(os.environ.get("LOGIN_MAX_FAILURES_PER_ACCOUNT", "5"))
+    LOGIN_MAX_FAILURES_PER_IP      = int(os.environ.get("LOGIN_MAX_FAILURES_PER_IP", "30"))
+    # Reverse proxies in front of the backend that append to X-Forwarded-For: 1 is the frontend's nginx
+    # (Compose); 2 with a reverse proxy on the host in front of it. The client IP feeds the per-IP limit
+    TRUSTED_PROXY_COUNT = int(os.environ.get("TRUSTED_PROXY_COUNT", "1"))
+
     CHROMA_HOST = os.environ.get("CHROMA_HOST", "chroma")
     CHROMA_PORT = int(os.environ.get("CHROMA_PORT", "8000"))
     CHROMA_TOKEN = os.environ.get("CHROMA_TOKEN", "")

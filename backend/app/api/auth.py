@@ -13,6 +13,7 @@ from datetime import datetime, timezone, timedelta
 import jwt
 from flask import Blueprint, request, jsonify, g, current_app
 
+from app.core import login_throttle as throttle
 from app.core.i18n import api_error
 from app.models import db, User, Plan, Subscription
 from app.models.audit import AuditLog
@@ -119,9 +120,15 @@ def login():
     if not isinstance(email, str) or not isinstance(password, str) or not email or not password:
         return jsonify({"error": api_error("email_password_required")}), 400
     email = email.strip().lower()
+    # Per-IP and per-account limits on failed attempts (core/login_throttle.py)
+    wait = throttle.blocked_for("login", request.remote_addr, email)
+    if wait:
+        return throttle.too_many_attempts(wait)
     user = User.query.filter_by(email=email).first()
     if not user or not user.check_password(password):
+        throttle.record_failure("login", request.remote_addr, email)
         return jsonify({"error": api_error("invalid_credentials")}), 401
+    throttle.clear_account("login", email)
     if not user.is_active:
         return jsonify({"error": api_error("account_disabled")}), 403
     user.last_login = datetime.now(timezone.utc)
@@ -147,8 +154,14 @@ def update_profile():
     if "avatar_url" in data:
         user.avatar_url = data["avatar_url"]
     if "new_password" in data and data.get("current_password"):
+        # The current password is checked like a login: same limits, counted apart
+        wait = throttle.blocked_for("password", request.remote_addr, user.id)
+        if wait:
+            return throttle.too_many_attempts(wait)
         if not user.check_password(data["current_password"]):
+            throttle.record_failure("password", request.remote_addr, user.id)
             return jsonify({"error": api_error("wrong_current_password")}), 400
+        throttle.clear_account("password", user.id)
         if len(data["new_password"]) < 8:
             return jsonify({"error": api_error("new_password_min_length")}), 400
         user.set_password(data["new_password"])

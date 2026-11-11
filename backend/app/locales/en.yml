@@ -449,6 +449,7 @@ errors:
   token_missing: "Missing token"
   token_expired: "Token expired"
   token_invalid: "Invalid token"
+  too_many_attempts: "Too many failed attempts. Try again in {minutes} min."
   user_not_found_or_disabled: "User not found or disabled"
   access_denied: "Access denied"
   no_active_plan: "No active plan"
