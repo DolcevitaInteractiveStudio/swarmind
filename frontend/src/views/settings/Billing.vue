@@ -11,18 +11,32 @@
           <p class="num">{{ t('billing.usage', { used: auth.user?.subscription?.simulations_used_this_month ?? 0, max: simsMax }) }}</p>
         </div>
       </div>
-      <router-link to="/pricing" class="btn btn-primary">{{ t('nav.upgrade_plan') }}</router-link>
+      <!-- No payment flow: the highest plan has nothing to change to, the others see the plans -->
+      <p v-if="highest" class="plan-top">{{ t('pricing.highest_plan') }}</p>
+      <router-link v-else-if="plans.length" to="/pricing" class="btn btn-primary">{{ t('billing.see_plans') }}</router-link>
     </section>
-    <p class="alert info-note">{{ t('billing.note') }}</p>
+    <p class="alert info-note">
+      {{ t('billing.note') }}
+      <a v-if="contactEmail && !highest" :href="contactHref(contactEmail, t('billing.contact_to_change'))">{{ t('billing.contact_to_change') }}</a>
+    </p>
   </div>
 </template>
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { tierTone } from '@/i18n/status'
+import { loadPlans, isHighestPlan, contactHref } from '@/site/plans'
 const { t } = useI18n()
 const auth = useAuthStore()
+const plans = ref([])
+const contactEmail = ref('')
+const highest = computed(() => isHighestPlan(plans.value, auth.plan))
+onMounted(async () => {
+  const data = await loadPlans()
+  plans.value = data.plans
+  contactEmail.value = data.contactEmail
+})
 const simsMax = computed(() => {
   const m = auth.plan?.limits?.simulations_per_month
   return m === -1 ? '∞' : m ?? 1
@@ -34,6 +48,7 @@ const simsMax = computed(() => {
 .plan-info strong { display: block; font-weight: var(--weight-semibold); }
 .plan-info p { font-size: var(--text-sm); color: var(--text-2); margin-top: 2px; }
 .info-note { font-size: var(--text-sm); color: var(--text-2); }
+.plan-top { font-size: var(--text-sm); color: var(--text-2); }
 @media (max-width: 599px) {
   .current-plan .btn { width: 100%; }
 }

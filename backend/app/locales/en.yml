@@ -493,7 +493,8 @@ errors:
   credential_exists: "A credential with this provider/label already exists"
   plan_excludes_provider: "Your plan does not include the provider {provider}"
   # graph / projects
-  project_limit: "Project limit reached ({max}). Upgrade your plan."
+  project_limit: "Project limit reached ({max}). Contact us to change plan."
+  billing_disabled: "Plans are not available on this installation."
   no_file: "No file uploaded"
   unsupported_format: "Unsupported format. Use: {formats}"
   file_too_large: "File too large ({size} MB). Limit: {max} MB"
