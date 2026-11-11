@@ -5,8 +5,9 @@ Failed attempts are counted per client IP and per account in a fixed window of L
 LOGIN_MAX_FAILURES_PER_IP failures from one IP (default 30) the endpoint answers 429, with Retry-After, until
 that window ends. A successful attempt clears the account counter (not the IP one). A limit of 0 turns it off.
 
-The client IP is the one ProxyFix takes from X-Forwarded-For (TRUSTED_PROXY_COUNT): without it every request
-would come from the frontend's nginx and the IP limit would apply to everyone at once.
+The client IP is the one ProxyFix takes from X-Forwarded-For (TRUSTED_PROXY_COUNT, the proxies between client
+and backend): without it every request would come from the last proxy and the IP limit would apply to everyone
+at once; with a count higher than the real one the client could choose its IP and bypass the limit.
 If Redis does not answer the attempt is let through (logged): an outage of Redis must not lock users out.
 """
 from __future__ import annotations

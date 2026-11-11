@@ -40,8 +40,9 @@ celery_app.conf.update(
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
-    # Client IP from X-Forwarded-For, set by the trusted proxies only (TRUSTED_PROXY_COUNT): the login
-    # throttling counts failures per IP, and without this every request has the IP of the frontend's nginx
+    # Client IP from X-Forwarded-For, set by the trusted proxies only (TRUSTED_PROXY_COUNT, proxies between
+    # client and backend): the login throttling counts failures per IP, and without this every request has
+    # the IP of the last proxy
     proxies = int(app.config.get("TRUSTED_PROXY_COUNT", 1) or 0)
     if proxies > 0:
         from werkzeug.middleware.proxy_fix import ProxyFix

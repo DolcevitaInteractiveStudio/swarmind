@@ -171,3 +171,13 @@ def test_password_change_is_throttled(app):
     res = client.put("/api/auth/me", json={"current_password": "right-password", "new_password": "another-password"},
                      headers=headers)
     assert res.status_code == 429
+
+
+def test_client_written_forwarded_for_is_ignored_with_one_proxy(app):
+    """TRUSTED_PROXY_COUNT=1: only the entry added by the proxy counts. A client that prepends a fake IP to
+    X-Forwarded-For stays on its real IP's counter and cannot bypass the per-IP limit."""
+    client = app.test_client()
+    for i in range(5):
+        login(client, f"nobody{i}@example.com", "wrong", ip=f"10.9.9.{i}, 203.0.113.50")
+    res = login(client, "cleo@example.com", "right-password", ip="10.9.9.99, 203.0.113.50")
+    assert res.status_code == 429

@@ -92,10 +92,12 @@ log says which side to fix. The Redis volume keeps its data.
   default 30) in a window of `LOGIN_THROTTLE_WINDOW_SECONDS` (default 900). Past a limit the answer is
   "Too many failed attempts" until the window ends; a successful sign-in clears the account counter.
   `0` turns a limit off. The counters live in Redis; if Redis does not answer, sign-in still works.
-- The client IP comes from `X-Forwarded-For`. `TRUSTED_PROXY_COUNT` is the number of proxies that
-  append to it: `1` with Compose alone (the frontend's nginx), `2` behind a reverse proxy on the host
-  ([chapter 1](01-installation.md#behind-a-reverse-proxy)). Too low, every user shares one IP counter;
-  too high, a client can choose its own IP.
+- The client IP comes from `X-Forwarded-For`. `TRUSTED_PROXY_COUNT` is the number of proxies between
+  the client and the backend: `1` (default) when the host proxy sends `/api/` and `/socket.io/` straight
+  to the backend, or with no host proxy; `2` when requests also pass through the frontend container's
+  nginx ([chapter 1](01-installation.md#client-ip-and-trusted_proxy_count)). Higher than the real number
+  lets clients spoof `X-Forwarded-For` and bypass the per-IP limit; lower makes every user share one
+  IP counter.
 - A password change (Profile, or `create-superadmin --reset-password`) signs out every other session
   of that user.
 

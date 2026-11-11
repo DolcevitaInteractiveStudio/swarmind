@@ -24,7 +24,7 @@ Parti da `docker compose ps` e `docker compose logs --tail 200 backend worker`.
 | Non esiste ancora nessun account | Crea il superadmin: `docker compose exec backend flask --app run create-superadmin --email …` |
 | Password del superadmin dimenticata | Stesso comando con `--reset-password` |
 | Tutti disconnessi dopo un aggiornamento | `SECRET_KEY` (o `ENCRYPTION_KEY`, quando `SECRET_KEY` è vuota) è cambiata: accedi di nuovo |
-| "Troppi tentativi falliti. Riprova tra N min." | È stato raggiunto il limite di accessi dell'account o dell'IP: attendi. Se capita a tutti gli utenti insieme, controlla `TRUSTED_PROXY_COUNT` ([Operazioni](08-operations.md#protezione-degli-accessi)) |
+| "Troppi tentativi falliti. Riprova tra N min." | È stato raggiunto il limite di accessi dell'account o dell'IP: attendi. Se capita a tutti gli utenti insieme, `TRUSTED_PROXY_COUNT` è più basso dei proxy davanti al backend ([Installazione](01-installation.md#ip-del-client-e-trusted_proxy_count)) |
 | "La sessione è terminata perché la password è cambiata" | La password è stata cambiata in un'altra sessione o reimpostata: accedi con quella nuova |
 | Le chiamate API non riescono con errori CORS, oppure l'avanzamento non si aggiorna mai | `FRONTEND_URL` non corrisponde all'indirizzo nel browser (schema, host e porta). Correggilo ed esegui `docker compose up -d backend` |
 | Manca l'avanzamento in tempo reale dietro un proxy | Il proxy non lascia passare gli upgrade WebSocket su `/socket.io/` ([reverse proxy](01-installation.md#dietro-un-reverse-proxy)) |

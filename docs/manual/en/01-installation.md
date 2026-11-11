@@ -82,9 +82,41 @@ docker compose up -d backend
 `FRONTEND_URL` is the only origin accepted by CORS and by the WebSocket. A mismatch shows up as
 failed API calls or a progress bar that never moves.
 
-Behind a reverse proxy that sends `X-Forwarded-For` (Caddy does, and so does the nginx example below),
-also set `TRUSTED_PROXY_COUNT=2`: the backend then sees the real client IP, which the sign-in limits
-count per IP. With the default `1` every user would share the proxy's IP and its limit.
+### Client IP and `TRUSTED_PROXY_COUNT`
+
+The sign-in limits count failures per client IP, which the backend reads from `X-Forwarded-For`.
+`TRUSTED_PROXY_COUNT` is the number of proxies between the client and the backend:
+
+- **1 (default)**: the host proxy sends `/api/` and `/socket.io/` straight to the backend
+  (`127.0.0.1:5001`) and only the rest to the frontend; or there is no host proxy and the browser
+  reaches the frontend container, whose nginx forwards to the backend.
+- **2**: requests go through the host proxy *and* the frontend container's nginx, as in the Caddy
+  and nginx examples below (everything to `127.0.0.1:3000`).
+
+With nginx, the direct layout replaces the two API locations of the example below with:
+
+```nginx
+    location /api/ {
+        proxy_pass http://127.0.0.1:5001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+    }
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:5001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_read_timeout 300s;
+    }
+```
+
+**Never set a value higher than the real number of proxies.** The backend would then trust an entry
+of `X-Forwarded-For` written by the client itself: anyone could pick a new IP for each attempt and
+bypass the per-IP sign-in limit. A value lower than the real number only makes every user share the
+IP of the last proxy, and so one per-IP counter.
 
 ### Caddy
 

@@ -49,7 +49,9 @@ All notable changes to this project are documented here. The format follows
 ### Upgrade notes (from 1.0.0)
 
 1. Add `REDIS_PASSWORD` to `.env` (letters and digits only; `./start.sh` adds one).
-2. Behind a reverse proxy on the host, set `TRUSTED_PROXY_COUNT=2`.
+2. Check `TRUSTED_PROXY_COUNT`: `1` (default) when the host proxy sends `/api/` and `/socket.io/`
+   straight to the backend, `2` when requests also pass through the frontend container's nginx.
+   Never higher than the real number of proxies (clients could spoof their IP).
 3. Rebuild the images (`docs/runbooks/rebuild-images.md`).
 4. Recreate Redis first: `docker compose up -d --no-deps redis`. The app refuses to start while Redis
    and `REDIS_URL` disagree, and that includes the migration command.

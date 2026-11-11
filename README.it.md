@@ -88,7 +88,7 @@ Tutto si trova in `.env`; [`.env.example`](.env.example) documenta ogni impostaz
 | `ENCRYPTION_KEY` | Obbligatoria. Cifra le chiavi dei provider salvate. Fanne un backup; non cambiarla mai alla leggera |
 | `SECRET_KEY` | Firma i token di accesso. Se vuota, viene derivata da `ENCRYPTION_KEY` |
 | `POSTGRES_PASSWORD`, `CHROMA_TOKEN`, `REDIS_PASSWORD` | Credenziali dei servizi interni |
-| `TRUSTED_PROXY_COUNT` | Proxy davanti al backend: `1` con il solo Compose, `2` dietro un reverse proxy sull'host |
+| `TRUSTED_PROXY_COUNT` | Proxy tra client e backend: `1` (default) se il proxy sull'host manda `/api/` direttamente al backend, `2` se le richieste passano anche dal container frontend. Mai più alto del numero reale: i client potrebbero falsificare l'IP |
 | `LOGIN_MAX_FAILURES_PER_ACCOUNT`, `LOGIN_MAX_FAILURES_PER_IP` | Accessi falliti ammessi per account e per IP in 15 minuti |
 | `FRONTEND_URL` | URL pubblico dell'app (origine per CORS e WebSocket) |
 | `SIMULATION_DEFAULT_LANGUAGE` | `en` o `it` |

@@ -93,10 +93,12 @@ log dice quale lato correggere. Il volume di Redis conserva i suoi dati.
   è "Troppi tentativi falliti" fino alla fine della finestra; un accesso riuscito azzera il contatore
   dell'account. `0` disattiva un limite. I contatori stanno in Redis; se Redis non risponde l'accesso
   funziona comunque.
-- L'IP del client viene da `X-Forwarded-For`. `TRUSTED_PROXY_COUNT` è il numero di proxy che lo
-  aggiornano: `1` con il solo Compose (il nginx del frontend), `2` dietro un reverse proxy sull'host
-  ([capitolo 1](01-installation.md#dietro-un-reverse-proxy)). Troppo basso, tutti gli utenti condividono un
-  solo contatore; troppo alto, un client può scegliersi l'IP.
+- L'IP del client viene da `X-Forwarded-For`. `TRUSTED_PROXY_COUNT` è il numero di proxy tra il client e
+  il backend: `1` (default) quando il proxy sull'host manda `/api/` e `/socket.io/` direttamente al backend,
+  o senza proxy sull'host; `2` quando le richieste passano anche dal nginx del container frontend
+  ([capitolo 1](01-installation.md#ip-del-client-e-trusted_proxy_count)). Un valore più alto del numero reale
+  permette ai client di falsificare `X-Forwarded-For` e aggirare il limite per IP; uno più basso fa
+  condividere a tutti gli utenti un unico contatore.
 - Un cambio password (Profilo, o `create-superadmin --reset-password`) disconnette tutte le altre sessioni
   di quell'utente.
 

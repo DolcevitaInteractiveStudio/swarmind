@@ -82,10 +82,41 @@ docker compose up -d backend
 `FRONTEND_URL` è l'unica origine accettata da CORS e dal WebSocket. Una discrepanza si manifesta come
 chiamate API non riuscite o come una barra di avanzamento che non si muove mai.
 
-Dietro un reverse proxy che invia `X-Forwarded-For` (lo fa Caddy, e anche l'esempio nginx qui sotto),
-imposta anche `TRUSTED_PROXY_COUNT=2`: così il backend vede il vero IP del client, su cui si contano i
-limiti di accesso per IP. Con il valore predefinito `1` tutti gli utenti condividerebbero l'IP del proxy
-e il suo limite.
+### IP del client e `TRUSTED_PROXY_COUNT`
+
+I limiti di accesso contano i tentativi falliti per IP del client, che il backend legge da
+`X-Forwarded-For`. `TRUSTED_PROXY_COUNT` è il numero di proxy tra il client e il backend:
+
+- **1 (default)**: il proxy sull'host manda `/api/` e `/socket.io/` direttamente al backend
+  (`127.0.0.1:5001`) e solo il resto al frontend; oppure non c'è un proxy sull'host e il browser
+  raggiunge il container del frontend, il cui nginx inoltra al backend.
+- **2**: le richieste passano dal proxy sull'host *e* dal nginx del container frontend, come negli
+  esempi Caddy e nginx qui sotto (tutto verso `127.0.0.1:3000`).
+
+Con nginx, la configurazione diretta sostituisce le due location API dell'esempio qui sotto con:
+
+```nginx
+    location /api/ {
+        proxy_pass http://127.0.0.1:5001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+    }
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:5001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_read_timeout 300s;
+    }
+```
+
+**Non impostare mai un valore più alto del numero reale di proxy.** Il backend si fiderebbe di una
+voce di `X-Forwarded-For` scritta dal client stesso: chiunque potrebbe scegliersi un IP nuovo a ogni
+tentativo e aggirare il limite di accesso per IP. Un valore più basso del numero reale fa solo
+condividere a tutti gli utenti l'IP dell'ultimo proxy, e quindi un unico contatore per IP.
 
 ### Caddy
 
