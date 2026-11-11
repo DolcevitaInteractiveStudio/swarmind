@@ -27,6 +27,7 @@ from app.agents.agent import AgentFactory
 from app.simulation import lifecycle
 from app.simulation.engine import (
     DEFAULT_ADVERSARIAL_POST_SHARE_CAP,
+    RESPONSE_STAT_KEYS,
     SimulationEngine,
     SimulationState,
     SimStatus,
@@ -643,8 +644,9 @@ def run_simulation_task(
 
         # Gli errori dei singoli agenti non interrompono il loop: se nessuno ha risposto non c'e' nulla da analizzare
         stats = final_state.response_stats
-        valid_replies = stats["posted"] + stats["engagement"] + stats["do_nothing"]
-        failed_replies = sum(stats.values()) - valid_replies
+        valid_replies = (stats["posted"] + stats["engagement"] + stats["do_nothing"]
+                         + stats.get("repetition_skipped", 0))
+        failed_replies = sum(stats.get(key, 0) for key in RESPONSE_STAT_KEYS) - valid_replies
         if failed_replies and not valid_replies:
             raise lifecycle.LifecycleError("no_valid_replies", {"failed": failed_replies})
 

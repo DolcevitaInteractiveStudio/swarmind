@@ -29,10 +29,20 @@ from ..core.llm import get_llm
 from ..core.llm_response import llm_log_fields
 from ..memory.agent_memory import AgentMemory
 from ..utils.excerpt import trim_excerpt
+from .repetition import REPETITION_HISTORY, repeats
 from .response_parser import OUTCOME_OK, parse_agent_reply, parse_json_object
 from .stance import SPAWN_ROUND, STANCE_ENUM, record_stance
 
 log = structlog.get_logger()
+
+# Actions that never publish their text: a repetition check would only waste a call
+NON_PUBLISHING_ACTIONS = {"LIKE", "DISLIKE", "DO_NOTHING", "FOLLOW", "UNFOLLOW"}
+# Second turn when the reply repeats one of the agent's own posts (agents/repetition.py)
+REPETITION_RETRY = """Your reply repeats a post you already published:
+"{previous}"
+Do not publish it again. Add something NEW to the debate (a different argument, a new detail from your role,
+a question you have not asked yet), or reply to another agent's post (REPOST with target_post_id, LIKE or
+DISLIKE). If you have nothing new to add, choose DO_NOTHING. Reply ONLY with the same JSON format."""
 
 # Personality axes — Big Five + domain-specific
 PERSONALITY_AXES = [
@@ -144,6 +154,8 @@ class Agent:
     emotional_state: str = "neutral"
     social_connections: list[str] = field(default_factory=list)
     posts_made: int = 0
+    # The agent's last posts (agents/repetition.py): a new post too similar to one of them is not published
+    recent_posts: list[str] = field(default_factory=list)
     influenced_by: list[str] = field(default_factory=list)
     is_adversarial: bool = False
     language: str = DEFAULT_LANGUAGE  # simulation language: posts and opinions are written in it
@@ -297,13 +309,14 @@ Reply ONLY with valid JSON (no markdown):
 }}"""
         user_prompt = with_directive(user_prompt, self.language)
 
+        temperature = 0.8 + (self.persona.personality.get("neuroticism", 0.5) * 0.3)
         response = await llm.complete(
             [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
             tier="fast",
-            temperature=0.8 + (self.persona.personality.get("neuroticism", 0.5) * 0.3),
+            temperature=temperature,
             max_tokens=512,
             json_mode=False,
         )
@@ -326,6 +339,32 @@ Reply ONLY with valid JSON (no markdown):
                 **llm_log_fields(response),
             )
 
+        # The same post again: one retry asking for something new, then the post is not published.
+        # action_data["repetition"]: None, "retried" (the retry was new) or "skipped" (counted by the engine)
+        repetition = None
+        repeated = self._repeated_post(action_data)
+        if repeated is not None:
+            repetition = "retried"
+            retry_note = with_directive(REPETITION_RETRY.format(previous=trim_excerpt(repeated, 200)), self.language)
+            response = await llm.complete(
+                [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                    {"role": "assistant", "content": response or ""},
+                    {"role": "user", "content": retry_note},
+                ],
+                tier="fast",
+                temperature=temperature,
+                max_tokens=512,
+                json_mode=False,
+            )
+            action_data = parse_agent_reply(response, available_actions)
+            if self._repeated_post(action_data) is not None:
+                repetition = "skipped"
+                action_data = {**action_data, "action": "DO_NOTHING", "content": "", "target_post_id": None}
+            log.info("agent_post_repetition", agent=self.agent_id, round=round_num, outcome=repetition)
+        action_data["repetition"] = repetition
+
         # Update agent state
         shift = float(action_data.get("opinion_shift", 0.0))
         susceptibility = self.persona.personality.get("influence_susceptibility", 0.5)
@@ -346,8 +385,18 @@ Reply ONLY with valid JSON (no markdown):
             except Exception:
                 pass
             self.posts_made += 1
+            if action_data.get("action") not in NON_PUBLISHING_ACTIONS:
+                self.recent_posts = [*self.recent_posts, action_data["content"]][-REPETITION_HISTORY:]
 
         return action_data
+
+    def _repeated_post(self, action_data: dict) -> str | None:
+        """The earlier post of this agent that the reply would publish again, or None."""
+        content = action_data.get("content") or ""
+        if (action_data.get("response_outcome") != OUTCOME_OK or not content.strip()
+                or action_data.get("action") in NON_PUBLISHING_ACTIONS):
+            return None
+        return repeats(content, self.recent_posts)
 
     def to_dict(self) -> dict:
         return {
