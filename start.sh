@@ -42,11 +42,20 @@ if [ ! -f .env ]; then
   set_env ENCRYPTION_KEY "$(random_b64url)"
   set_env POSTGRES_PASSWORD "$(random_hex)"
   set_env CHROMA_TOKEN "$(random_hex)"
+  set_env REDIS_PASSWORD "$(random_hex)"
   chmod 600 .env
   info "Back up .env: without ENCRYPTION_KEY the stored provider keys cannot be decrypted."
 fi
 
 grep -Eq '^ENCRYPTION_KEY=.+' .env || error "ENCRYPTION_KEY is empty in .env (see .env.example)."
+
+# .env from before REDIS_PASSWORD: add a random one (Redis is recreated with it by the "up" below)
+if ! grep -Eq '^REDIS_PASSWORD=' .env; then
+  info "Adding a random REDIS_PASSWORD to .env..."
+  printf '\n# Redis password (see .env.example)\nREDIS_PASSWORD=%s\n' "$(random_hex)" >> .env
+elif grep -Eq '^REDIS_PASSWORD=(change-me-redis-password)?$' .env; then
+  set_env REDIS_PASSWORD "$(random_hex)"
+fi
 
 info "Building and starting the services (the first build takes a few minutes)..."
 docker compose up -d --build
