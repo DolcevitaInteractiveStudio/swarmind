@@ -18,6 +18,8 @@ class User(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
+    # Version of the login tokens ("tv" claim): set_password increments it, the older tokens are rejected
+    token_version = db.Column(db.Integer, nullable=False, default=0, server_default="0")
     full_name = db.Column(db.String(255), nullable=False, default="")
     role = db.Column(db.Enum(Role), nullable=False, default=Role.USER)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
@@ -40,7 +42,9 @@ class User(db.Model):
     audit_logs = db.relationship("AuditLog", back_populates="user", lazy="dynamic", cascade="all, delete-orphan")
 
     def set_password(self, password: str):
+        """New password: every login token issued before stops working (password change, CLI reset)."""
         self.password_hash = generate_password_hash(password)
+        self.token_version = (self.token_version or 0) + 1
 
     def check_password(self, password: str) -> bool:
         return check_password_hash(self.password_hash, password)

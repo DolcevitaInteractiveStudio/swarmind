@@ -50,10 +50,13 @@ def app(tmp_path):
 def token(app, email, **claims):
     from app.api.auth import _make_token
     with app.app_context():
-        uid = User.query.filter_by(email=email).one().id
+        user = User.query.filter_by(email=email).one()
+        uid = user.id
         if not claims:
             return _make_token(uid)
-        return jwt.encode({"sub": uid, **claims}, app.config["SECRET_KEY"], algorithm="HS256")
+        # "tv": the token version of the user (a token with an older one is revoked)
+        return jwt.encode({"sub": uid, "tv": user.token_version, **claims}, app.config["SECRET_KEY"],
+                          algorithm="HS256")
 
 
 def hdr(t):

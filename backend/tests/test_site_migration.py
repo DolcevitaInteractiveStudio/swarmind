@@ -14,7 +14,8 @@ PG_URL = os.environ.get("SWARMIND_TEST_PG_URL")
 pytestmark = pytest.mark.skipif(not PG_URL, reason="SWARMIND_TEST_PG_URL not set")
 
 PREVIOUS = "e8a4c2f6b9d1"
-HEAD = "b5d2f8e41c73"
+# The current head of the migrations (create_app stamps it on a new database); b5d2f8e41c73 is site_settings
+HEAD = "f1b7d3c9a2e5"
 
 
 def schema(conn):

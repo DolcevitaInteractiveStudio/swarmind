@@ -42,6 +42,8 @@ async function save() {
   saving.value = true
   try {
     const { data } = await api.put('/auth/me', form.value)
+    // A password change signs out the other sessions: this one continues with the new token
+    if (data.token) { auth.setToken(data.token); delete data.token }
     auth.user = data; msg.value = t('common.saved'); msgType.value = 'ok'
     toast(t('common.saved'))
     form.value.new_password = ''; form.value.current_password = ''

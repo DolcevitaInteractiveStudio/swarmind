@@ -23,8 +23,11 @@ auth_bp = Blueprint("auth", __name__)
 # ── Helper JWT ─────────────────────────────────────────────────────────────────
 
 def _make_token(user_id: str, expires_hours: int = 24) -> str:
+    """JWT for the user, with its current token_version ("tv"): a password change invalidates it."""
+    user = db.session.get(User, user_id)
     payload = {
         "sub": user_id,
+        "tv": (user.token_version or 0) if user else 0,
         "iat": datetime.now(timezone.utc),
         "exp": datetime.now(timezone.utc) + timedelta(hours=expires_hours),
     }
@@ -51,9 +54,16 @@ def login_required(f):
             return jsonify({"error": api_error("token_expired")}), 401
         except jwt.InvalidTokenError:
             return jsonify({"error": api_error("token_invalid")}), 401
-        user = User.query.get(payload["sub"])
+        user = db.session.get(User, payload["sub"])
         if not user or not user.is_active:
             return jsonify({"error": api_error("user_not_found_or_disabled")}), 401
+        # Issued before the last password change or reset. Tokens without "tv" predate token_version: version 0
+        try:
+            token_version = int(payload.get("tv", 0))
+        except (TypeError, ValueError):
+            return jsonify({"error": api_error("token_invalid")}), 401
+        if token_version != (user.token_version or 0):
+            return jsonify({"error": api_error("token_revoked")}), 401
         g.current_user = user
         return f(*args, **kwargs)
     return decorated
@@ -165,5 +175,10 @@ def update_profile():
         if len(data["new_password"]) < 8:
             return jsonify({"error": api_error("new_password_min_length")}), 400
         user.set_password(data["new_password"])
+        AuditLog.log("user_password_changed", user_id=user.id, ip_address=request.remote_addr)
     db.session.commit()
-    return jsonify(user.to_dict()), 200
+    body = user.to_dict()
+    if "new_password" in data and data.get("current_password"):
+        # The other sessions are signed out; this one gets a token with the new version
+        body = {**body, "token": _make_token(user.id)}
+    return jsonify(body), 200
