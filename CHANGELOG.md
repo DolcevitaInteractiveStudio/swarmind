@@ -30,9 +30,11 @@ All notable changes to this project are documented here. The format follows
 
 1. Add `REDIS_PASSWORD` to `.env` (letters and digits only; `./start.sh` adds one).
 2. Behind a reverse proxy on the host, set `TRUSTED_PROXY_COUNT=2`.
-3. Rebuild the images (`docs/runbooks/rebuild-images.md`) and apply the migrations
-   (`flask --app run db upgrade`).
-4. Recreate Redis and the services: `docker compose up -d redis backend worker` (and `flower`).
+3. Rebuild the images (`docs/runbooks/rebuild-images.md`).
+4. Recreate Redis first: `docker compose up -d --no-deps redis`. The app refuses to start while Redis
+   and `REDIS_URL` disagree, and that includes the migration command.
+5. Apply the migrations (`docker compose run --rm backend flask --app run db upgrade`), then
+   `docker compose up -d`.
 
 ## [1.0.0] — Initial public release
 

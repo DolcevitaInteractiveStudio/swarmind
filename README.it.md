@@ -118,7 +118,8 @@ docker compose up -d
 
 Leggi prima [CHANGELOG.md](CHANGELOG.md) e fai un backup prima di aggiornare:
 [Operazioni](docs/manual/it/08-operations.md).
-Aggiornamento dalla 1.0.0: aggiungi `REDIS_PASSWORD` a `.env` prima di `docker compose up -d`
+Aggiornamento dalla 1.0.0: aggiungi `REDIS_PASSWORD` a `.env` ed esegui `docker compose up -d --no-deps redis`
+prima delle migrazioni
 ([Operazioni](docs/manual/it/08-operations.md#aggiornamento-dalla-100-password-di-redis)).
 
 ## Documentazione

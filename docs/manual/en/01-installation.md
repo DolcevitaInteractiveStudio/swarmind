@@ -159,7 +159,7 @@ docker compose up -d
 
 Read `CHANGELOG.md` before upgrading and take a backup ([chapter 8](08-operations.md)).
 New releases may add settings to `.env.example`: compare it with your `.env`.
-Upgrading from 1.0.0: set `REDIS_PASSWORD` first
+Upgrading from 1.0.0: set `REDIS_PASSWORD` and recreate Redis before the migrations
 ([chapter 8](08-operations.md#upgrading-from-100-redis-password)).
 
 ## Uninstall

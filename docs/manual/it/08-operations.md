@@ -76,8 +76,10 @@ Ora Redis richiede una password. In un'installazione esistente, prima di `docker
 
 1. Aggiungi `REDIS_PASSWORD` a `.env`, solo lettere e cifre (finisce dentro un URL):
    `echo "REDIS_PASSWORD=$(openssl rand -hex 32)" >> .env`. `./start.sh` ne aggiunge una se manca.
-2. Ricrea Redis e i servizi che lo usano, quando non ci sono simulazioni in corso:
-   `docker compose up -d redis backend worker` (e `flower` se lo usi).
+2. Ricrea prima Redis, quando non ci sono simulazioni in corso: `docker compose up -d --no-deps redis`.
+   Poi aggiorna come al solito: migrazioni (`docker compose run --rm backend flask --app run db upgrade`)
+   e `docker compose up -d`. L'ordine conta: l'app, compreso il comando delle migrazioni, si rifiuta di
+   partire finché Redis gira ancora senza password.
 
 Senza l'impostazione Compose si ferma con `Set REDIS_PASSWORD in .env`. Se Redis e l'app non sono
 d'accordo (Redis non ricreato, o una password diversa), backend e worker si rifiutano di partire e il
