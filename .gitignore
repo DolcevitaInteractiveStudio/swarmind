@@ -20,6 +20,7 @@ dist/
 .vite/
 .parcel-cache/
 ui-screenshots/
+graphify-out/
 *.log
 npm-debug.log*
 yarn-debug.log*
