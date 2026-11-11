@@ -103,14 +103,19 @@
     "up_to_agents": "Up to {n} agents",
     "max_rounds": "Up to {n} rounds",
     "current_plan": "Current plan",
-    "choose": "Choose",
     "get_started": "Get started",
     "features": {
-      "can_use_custom_api_keys": "Your own API keys",
-      "can_export_report": "Report export",
-      "can_chat_with_agents": "Chat with simulated agents",
+      "custom_api_keys": "Your own API keys",
+      "export_report": "Report export",
+      "chat_with_agents": "Chat with simulated agents",
       "priority_queue": "Priority queue"
-    }
+    },
+    "loading": "Loading plans…",
+    "empty": "No plans are available right now.",
+    "highest_plan": "You're on the highest plan.",
+    "contact_to_change": "Contact us to change plan",
+    "ask_admin": "Ask your administrator to change plan.",
+    "mail_subject": "Change of plan: {plan}"
   },
   "profile": {
     "title": "Profile",
@@ -122,7 +127,9 @@
   "billing": {
     "title": "Plan and billing",
     "usage": "{used} / {max} simulations used this month",
-    "note": "To change plan or manage billing, contact support or upgrade from the pricing page."
+    "note": "There is no online payment: plans are changed by the administrator.",
+    "see_plans": "See plans",
+    "contact_to_change": "Contact us to change plan"
   },
   "dashboard": {
     "hello": "Hello",
@@ -285,7 +292,8 @@
       "comments": "Comments",
       "announcements": "Announcements",
       "empty": "No posts yet.",
-      "load_more": "Load more"
+      "load_more": "Load more",
+      "saved_note": "Latest {saved} posts of {total}: the feed keeps only the most recent posts."
     },
     "metrics": {
       "empty": "No metrics available.",

@@ -51,6 +51,7 @@ from ..core.llm_response import llm_log_fields
 from ..config import Config
 from ..memory.chroma_client import ChromaSkipped, chroma_settings, error_text, is_outage, run_chroma
 from ..memory.knowledge_base import KB_PROMPT_EXCERPTS, format_kb_excerpts
+from ..utils.excerpt import trim_excerpt
 
 log = structlog.get_logger()
 
@@ -92,9 +93,13 @@ RESPONSE_STAT_KEYS = (
     "posted",
     "engagement",  # LIKE/DISLIKE/REPOST applicati a un post esistente, senza nuovo post
     "do_nothing",  # nessun effetto: DO_NOTHING, azione senza testo, target inesistente
+    "repetition_skipped",  # ripeteva un post dello stesso agente anche dopo il nuovo tentativo: non pubblicato
     *FAILED_OUTCOMES,
     "errors",      # eccezione durante la chiamata LLM
 )
+# Non e' un esito (fuori dalla somma): nuovi tentativi chiesti perche' la risposta ripeteva un post dello
+# stesso agente (agents/repetition.py). La risposta del nuovo tentativo ha poi il suo esito
+REPETITION_RETRIES = "repetition_retries"
 
 # One English prompt; the language of the news item comes from the directive at the end
 _DIVERSITY_EVENT_PROMPT = """SUBJECT CARD
@@ -164,7 +169,7 @@ class SimulationState:
     social_feed: list[dict] = field(default_factory=list)  # global post feed
     _last_feed_map: dict = field(default_factory=dict)  # short_id -> post_id per Patch D
     post_engagement: dict = field(default_factory=dict)  # Patch H: aggregato engagement per TUTTI i post, sopravvive al trim del feed
-    response_stats: dict = field(default_factory=lambda: dict.fromkeys(RESPONSE_STAT_KEYS, 0))
+    response_stats: dict = field(default_factory=lambda: dict.fromkeys((*RESPONSE_STAT_KEYS, REPETITION_RETRIES), 0))
     adversarial_post_share_cap: float = DEFAULT_ADVERSARIAL_POST_SHARE_CAP
     adversarial_posts: int = 0  # sul totale response_stats["posted"]: il feed viene tagliato
     created_at: float = field(default_factory=time.time)
@@ -402,8 +407,13 @@ class SimulationEngine:
                 state.response_stats["errors"] += 1
                 continue
             outcome = result.get("response_outcome")
+            if result.get("repetition"):
+                state.response_stats[REPETITION_RETRIES] = state.response_stats.get(REPETITION_RETRIES, 0) + 1
             if outcome in FAILED_OUTCOMES:
                 state.response_stats[outcome] += 1
+                continue
+            if result.get("repetition") == "skipped":
+                state.response_stats["repetition_skipped"] = state.response_stats.get("repetition_skipped", 0) + 1
                 continue
             action = (result.get("action") or "CREATE_POST").upper()
 
@@ -460,7 +470,7 @@ class SimulationEngine:
                             "round": repost["round"],
                             "author_id": repost["author_id"],
                             "author_name": repost["author_name"],
-                            "content_preview": (repost.get("content") or "")[:200],
+                            "content_preview": trim_excerpt(repost.get("content") or "", 200),
                             "action": "REPOST",
                             "target_post_id": real_post_id,
                             "likes": 0,
@@ -503,7 +513,7 @@ class SimulationEngine:
                     "round": post["round"],
                     "author_id": post["author_id"],
                     "author_name": post["author_name"],
-                    "content_preview": (post.get("content") or "")[:200],
+                    "content_preview": trim_excerpt(post.get("content") or "", 200),
                     "action": post["action"],
                     "likes": 0,
                     "dislikes": 0,
@@ -739,7 +749,7 @@ class SimulationEngine:
             ][-3:]
             if not own_posts:
                 return "no_recent_posts"
-            posts_block = "\n".join(f"- {p[:200]}" for p in own_posts)
+            posts_block = "\n".join(f"- {trim_excerpt(p, 200)}" for p in own_posts)
 
             # Prompt differenziato per adversari: rinforza il ruolo critico invece di rivalutare neutralmente
             if getattr(agent, "is_adversarial", False):
@@ -922,7 +932,7 @@ class SimulationEngine:
             "round": disruption["round"],
             "author_id": disruption["author_id"],
             "author_name": disruption["author_name"],
-            "content_preview": (disruption.get("content") or "")[:200],
+            "content_preview": trim_excerpt(disruption.get("content") or "", 200),
             "action": "ANNOUNCE",
             "likes": 0,
             "dislikes": 0,

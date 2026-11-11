@@ -3,6 +3,7 @@ Site settings API: landing page, branding, uploaded images.
 
 GET  /api/site?lang=en|it            public: branding + landing content (no auth, ETag)
 GET  /api/site/assets/<name>         public: an uploaded image (immutable, cached)
+GET  /api/site/plans                 public, only with BILLING_ENABLED: active plans and the contact for a change
 GET  /api/admin/site                 superadmin: full document, both languages, defaults
 PUT  /api/admin/site                 superadmin: save the full document (validated, audited)
 POST /api/admin/site/assets          superadmin: upload an image (multipart: file, kind)
@@ -17,7 +18,7 @@ from flask import Blueprint, current_app, g, jsonify, request, send_file
 
 from app.core import site_settings as ss
 from app.core.i18n import api_error, normalize_language, request_language
-from app.models import AuditLog, SiteSettings, db
+from app.models import AuditLog, Plan, SiteSettings, db
 from app.models.site import SITE_SETTINGS_ID
 from .auth import superadmin_required
 
@@ -82,6 +83,40 @@ def public_site():
     response.headers["Cache-Control"] = "public, no-cache"
     response.headers["Vary"] = "Accept-Language"
     return response
+
+
+# Order of the plans on the plans page: the last one is the highest
+PLAN_TIER_ORDER = {"free": 0, "pro": 1, "enterprise": 2}
+
+
+def contact_email(lang: str) -> str:
+    """The contact for a change of plan: the footer address set by the admin (Site & branding), else
+    CONTACT_EMAIL. Empty if neither is set."""
+    try:
+        footer = load_document()[0]["content"][lang]["footer"]
+        address = (footer.get("contact_email") or "").strip()
+    except Exception as e:  # never break the plans page over the site settings
+        log.warning("site_settings_unreadable", error=str(e)[:200])
+        address = ""
+    return address or (current_app.config.get("CONTACT_EMAIL") or "").strip()
+
+
+@site_bp.get("/site/plans")
+def public_plans():
+    """The active plans, lowest first, each with its rank, and the contact for a change of plan.
+
+    Only with BILLING_ENABLED. There is no payment flow: the admin changes plans, the page says whom to contact.
+    The page used /api/admin/plans (admins only), so for every user it was empty.
+    """
+    if not current_app.config.get("BILLING_ENABLED"):
+        return jsonify({"error": api_error("billing_disabled")}), 404
+    lang = normalize_language(request.args.get("lang")) or request_language()
+    plans = sorted(Plan.query.filter(Plan.is_active.isnot(False)).all(),
+                   key=lambda p: (PLAN_TIER_ORDER.get(p.tier.value, len(PLAN_TIER_ORDER)), p.price_monthly))
+    return jsonify({
+        "plans": [{**p.to_dict(), "rank": rank} for rank, p in enumerate(plans)],
+        "contact_email": contact_email(lang),
+    }), 200
 
 
 @site_bp.get("/site/assets/<string:name>")

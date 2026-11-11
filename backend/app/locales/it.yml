@@ -33,23 +33,23 @@ critical_voices:
     - name: "Sostenitore storico deluso"
       role: "Persona che segue il soggetto da molti anni"
       background: >-
-        Conosce il soggetto da molto tempo e ci e' affezionato. Ha gia' visto annunciare
+        Conosce il soggetto da molto tempo e ci è affezionato. Ha già visto annunciare
         cambiamenti che hanno portato poco a chi c'era da prima.
       core_beliefs:
-        - "Un cambiamento deve portare qualcosa a chi c'e' gia', non solo a chi si vuole conquistare"
+        - "Un cambiamento deve portare qualcosa a chi c'è già, non solo a chi si vuole conquistare"
         - "Contano i fatti, non gli annunci"
       fears:
-        - "Perdere cio' che rendeva riconoscibile il soggetto"
+        - "Perdere ciò che rendeva riconoscibile il soggetto"
       motivations:
-        - "Difendere cio' che apprezza da anni"
+        - "Difendere ciò che apprezza da anni"
     - name: "Osservatore indipendente scettico"
       role: "Commentatore indipendente del settore"
       background: >-
         Segue il settore senza legami con il soggetto. Confronta le promesse con i risultati
-        e con cio' che e' successo ad altri in situazioni simili.
+        e con ciò che è successo ad altri in situazioni simili.
       core_beliefs:
         - "Questa operazione va giudicata sui risultati, non sulle intenzioni dichiarate"
-        - "Molti cambiamenti simili hanno promesso piu' di quanto hanno ottenuto"
+        - "Molti cambiamenti simili hanno promesso più di quanto hanno ottenuto"
       fears:
         - "Che una bella storia nasconda l'assenza di sostanza"
       motivations:
@@ -60,7 +60,7 @@ critical_voices:
         Ha valutato il soggetto e ha preferito un'alternativa. Non vede ancora un motivo
         concreto per cambiare idea.
       core_beliefs:
-        - "Non vedo cosa offra questa operazione che le alternative non offrano gia'"
+        - "Non vedo cosa offra questa operazione che le alternative non offrano già"
         - "Cambiare immagine non basta a guadagnare fiducia"
       fears:
         - "Lasciarsi convincere da promesse che poi non vengono mantenute"
@@ -89,10 +89,10 @@ report:
     most: "più plausibile"
     plausible: "plausibile"
     less: "meno plausibile"
-    # Nota di chiusura degli scenari quando nessuno puo' essere il piu' plausibile (postprocess.enforce_scenario_likelihood)
+    # Nota di chiusura degli scenari quando nessuno può essere il più plausibile (postprocess.enforce_scenario_likelihood)
     no_most_note: "Nessuno scenario è il più plausibile: le evidenze di questa simulazione non li distinguono."
   entropy:
-    # Letture dell'entropia della convinzione: parlano solo dell'intensita' delle convinzioni
+    # Letture dell'entropia della convinzione: parlano solo dell'intensità delle convinzioni
     low: "convinzione concentrata"
     low_meaning: "quasi tutti gli agenti hanno un'intensità di convinzione simile"
     mid: "convinzione moderatamente dispersa"
@@ -112,8 +112,8 @@ report:
     rounds: "Round"
     agents: "Agenti"
     total_posts: "Post totali"
-    # "Consenso" e' solo l'accordo sulla posizione verso il cambiamento; la varianza della convinzione e'
-    # l'omogeneita' della convinzione
+    # "Consenso" è solo l'accordo sulla posizione verso il cambiamento; la varianza della convinzione è
+    # l'omogeneità della convinzione
     consensus_level: "Consenso sulla posizione"
     conviction_uniformity: "Omogeneità della convinzione"
     mean_conviction: "Convinzione media"
@@ -144,7 +144,7 @@ report:
     high: "alto"
     medium: "medio"
     low: "basso"
-  # Omogeneita' della convinzione (dalla varianza): non e' consenso
+  # Omogeneità della convinzione (dalla varianza): non è consenso
   conviction_uniformity_levels:
     high: "alta"
     medium: "media"
@@ -191,7 +191,7 @@ report:
       all: "tutti gli {noun}"
   # Affermazioni degli agenti citate negli scenari e nella previsione (postprocess.mark_unverified_claims)
   claims:
-    # L'attribuzione apre la frase intera, mai a meta'
+    # L'attribuzione apre la frase intera, mai a metà
     attributed: "Secondo {agent}, {sentence} (affermazione dell'agente, non verificata nel brief: non è un'evidenza){end}"
   # Righe dei parametri dell'appendice, scritte dal sistema dalla simulazione salvata (postprocess.appendix_parameters)
   parameters:
@@ -204,7 +204,8 @@ report:
     not_specified: "non specificata"
   # Quota dei post pubblicati dai top 3 influencer, calcolata dal sistema (appendice)
   top3:
-    share: "I top 3 hanno pubblicato il {top_pct} dei post ({top_posts} su {total_posts}); il restante {rest_pct} viene dagli agenti non citati."
+    share: "I 3 agenti naturali più attivi hanno pubblicato il {top_pct} dei post ({top_posts} su {total_posts}); il restante {rest_pct} viene dagli agenti non citati."
+    share_with_critical: "I 3 agenti naturali più attivi hanno pubblicato il {top_pct} dei post ({top_posts} su {total_posts}); le voci critiche ne hanno pubblicati {critical_posts} ({critical_pct}), con una frequenza stabilita dal sistema; il restante {rest_pct} viene dagli altri agenti naturali."
     unknown: "La quota di post dei top 3 non è disponibile per questa simulazione."
   # Riscrittura di "consenso" nel testo del modello (postprocess.fix_consensus_wording)
   consensus_rewording:
@@ -283,7 +284,7 @@ report:
     pragmatic: "pragmatico"
     analytical: "analitico"
   template_none: "nessuno"
-  adversarial_note_heading: "**Natura degli agenti adversarial:**"
+  adversarial_note_heading: "**Voci critiche:**"
   archetypes:
     population_demographer: "La composizione della popolazione è proposta dal Demographer (un modello LLM) a partire dal brief"
     population_kb: "Gli agenti naturali derivano dalle entità estratte dalla knowledge base"
@@ -294,7 +295,7 @@ report:
     without_template: >-
       - {population}, e le voci critiche sono ricavate dal brief o indicate dall'utente (nessun
       template usato): nessuna delle due fonti è validata contro distribuzioni demografiche reali.
-    # Una riga con questo testo descrive gli archetipi del template: sostituita se il template non c'e'
+    # Una riga con questo testo descrive gli archetipi del template: sostituita se il template non c'è
     template_needle: "definiti dal template"
   # La riga dei limiti con questo testo si toglie se il report non ha una sezione di raccomandazioni
   recommendations_needle: "raccomandazioni operative"
@@ -305,10 +306,10 @@ report:
     {parameters}
 
     **Criteri di selezione degli agenti citati:**
-    I top 3 influencer sono selezionati per volume di post pubblicati. Gli altri agenti partecipano al calcolo delle metriche (posizione, convinzione, entropia) ma non sono citati individualmente nel report. {top3_sentence}
+    I top 3 influencer sono gli agenti naturali con più post pubblicati: le voci critiche non entrano nella classifica, perché quante volte intervengono lo stabilisce il sistema. Gli altri agenti partecipano al calcolo delle metriche (posizione, convinzione, entropia) ma non sono citati individualmente nel report. {top3_sentence}
 
-    **Natura degli agenti adversarial:**
-    Se la simulazione include agenti marcati is_adversarial=true, questi sono stati deliberatamente inseriti per mettere alla prova le posizioni prevalenti. Non rappresentano una distribuzione di mercato naturale: la loro presenza amplifica artificialmente le critiche per identificare vulnerabilità.
+    **Voci critiche:**
+    Le voci critiche sono agenti inseriti deliberatamente dal sistema per mettere alla prova le posizioni prevalenti. Non rappresentano una distribuzione di mercato naturale: la loro presenza amplifica le critiche per far emergere le vulnerabilità.
 
     **Confidence score — natura della metrica:**
     Il livello di confidenza è calcolato dal sistema, non dal modello: parte dalla stabilità delle posizioni degli agenti sul cambiamento (consenso e spostamento tra la prima e l'ultima misura; per le simulazioni senza misura della posizione, da variance e opinion_entropy della convinzione) ed è limitato dalla numerosità del campione ({confidence_rule}). Per questo gli scenari hanno solo una plausibilità qualitativa, senza percentuali. NON è calibrato retroattivamente contro esiti reali (nessun Brier score, nessun track record storico). Va letto come indicatore interno di stabilità delle posizioni simulate, non come probabilità di accuratezza predittiva verificata.
@@ -318,14 +319,28 @@ report:
     {archetypes_limitation}
     - Le posizioni rilevate possono essere in parte un artefatto del prompt iniziale di simulazione: prompt entusiasti o pessimisti possono orientare le dinamiche. Test A/B con prompt variati non sono inclusi in questa esecuzione.
     - Le raccomandazioni operative sono coerenti con lo stato del prodotto dichiarato nel topic ma non sono state validate con test reali di efficacia.
+  # Frasi del codice nel paragrafo "Voci critiche" dell'appendice (postprocess.critical_voices_disclosure)
   share:
-    not_recorded: "Quota di post adversarial: non registrata per questa simulazione."
-    none: "Quota di post adversarial: 0% (nessun agente adversarial in questa simulazione)."
+    not_recorded: "Quota di post delle voci critiche: non registrata per questa simulazione."
+    none: "Quota di post delle voci critiche: 0% (nessuna voce critica in questa simulazione)."
     full: >-
-      Quota di post adversarial: {share} ({adversarial_posts} post su {posts} dell'intera simulazione),
-      da {adversarial_agents} agenti adversarial su {total_agents}; tetto configurato: {cap}.
-      La quota dipende da quanto spesso il sistema fa intervenire questi agenti: non misura quanto
-      le critiche siano diffuse sul mercato.
+      Quota di post delle voci critiche: {share} ({adversarial_posts} post su {posts} dell'intera
+      simulazione), da {adversarial_agents} voci critiche su {total_agents} agenti. La quota dipende da
+      quanto spesso il sistema fa intervenire queste voci: non misura quanto le critiche siano diffuse
+      sul mercato.
+    # I due tetti sono diversi: uno conta gli agenti, l'altro i post
+    caps: >-
+      Due limiti diversi regolano le voci critiche: al massimo il {agent_cap} degli agenti della
+      simulazione può essere una voce critica (quota di agenti), e al massimo il {post_cap} dei post può
+      venire dalle voci critiche (quota di post).
+    truncated_one: >-
+      Erano previste {planned} voci critiche; ne è stata tenuta {kept} per rispettare la quota massima di
+      voci critiche ({agent_cap} degli agenti); {excluded}
+    truncated_many: >-
+      Erano previste {planned} voci critiche; ne sono state tenute {kept} per rispettare la quota massima
+      di voci critiche ({agent_cap} degli agenti); {excluded}
+    excluded_one: "quella esclusa è stata scelta a caso."
+    excluded_many: "le {count} escluse sono state scelte a caso."
   relabel:
     natural_many: "voci critiche (agenti adversarial)"
     natural_one: "una voce critica (agente adversarial)"
@@ -391,23 +406,23 @@ debate:
 metrics:
   polarization_delta:
     insufficient_data: "Dati insufficienti per calcolare la polarizzazione della convinzione nel tempo (servono almeno 2 round)."
-    # Polarizzazione della convinzione (opinion_strength): parla solo dell'intensita' delle convinzioni
+    # Polarizzazione della convinzione (opinion_strength): parla solo dell'intensità delle convinzioni
     polarization_active: "Convinzione più polarizzata (delta +{delta}): durante la conversazione l'intensità delle convinzioni si è divaricata, tra agenti molto convinti e agenti poco convinti."
     depolarization: "Convinzione meno polarizzata (delta {delta}): durante la conversazione l'intensità delle convinzioni si è avvicinata: gli agenti sono diventati più simili per quanto sono convinti."
     stable: "Convinzione stabile (delta {delta}): durante la conversazione la distribuzione dell'intensità delle convinzioni non è cambiata in modo significativo."
   echo_chamber_index:
     insufficient_data: "Dati insufficienti per calcolare l'echo chamber index (servono almeno 3 round con 2+ post)."
-    failed: "Non e' stato possibile calcolare la similarita' dei post."
-    echo_chamber_strong: "Echo chamber forte (similarita' media {score}): gli agenti convergono su un vocabolario comune, amplificando le stesse idee anziche' contrastarle. Il tema produce eco, non dibattito."
-    partial_debate: "Dibattito parziale (similarita' media {score}): coesistono posizioni diverse ma con contaminazione reciproca dei vocabolari. C'e' ascolto tra le fazioni."
-    parallel_silos: "Silos paralleli (similarita' media {score}): gli agenti parlano di argomenti troppo diversi tra loro. Il tema non e' riuscito a unificare il dibattito in un terreno comune."
+    failed: "Non è stato possibile calcolare la similarità dei post."
+    echo_chamber_strong: "Echo chamber forte (similarità media {score}): gli agenti convergono su un vocabolario comune, amplificando le stesse idee anziché contrastarle. Il tema produce eco, non dibattito."
+    partial_debate: "Dibattito parziale (similarità media {score}): coesistono posizioni diverse ma con contaminazione reciproca dei vocabolari. C'è ascolto tra le fazioni."
+    parallel_silos: "Silos paralleli (similarità media {score}): gli agenti parlano di argomenti troppo diversi tra loro. Il tema non è riuscito a unificare il dibattito in un terreno comune."
   information_diversity:
-    insufficient_data: "Dati insufficienti per calcolare la diversita' informativa (servono almeno 3 round)."
-    insufficient_trend: "Dati insufficienti per il trend di diversita'."
-    rapid_collapse: "Appiattimento narrativo rapido ({delta_pct}% di keyword uniche tra prima e seconda meta' della simulazione): la conversazione converge rapidamente su pochi temi dominanti, escludendo sfumature. Segnale di saturazione narrativa."
+    insufficient_data: "Dati insufficienti per calcolare la diversità informativa (servono almeno 3 round)."
+    insufficient_trend: "Dati insufficienti per il trend di diversità."
+    rapid_collapse: "Appiattimento narrativo rapido ({delta_pct}% di keyword uniche tra prima e seconda metà della simulazione): la conversazione converge rapidamente su pochi temi dominanti, escludendo sfumature. Segnale di saturazione narrativa."
     gradual_convergence: "Convergenza graduale ({delta_pct}% di keyword uniche): il dibattito mette a fuoco gradualmente 2-3 temi centrali, escludendo il rumore. Dinamica sana di consolidamento."
-    diversity_growth: "Espansione narrativa ({delta_pct}% di keyword uniche in piu'): la conversazione si apre nel tempo a nuovi argomenti. Indica che il tema genera approfondimenti inattesi."
-    stable_diversity: "Diversita' stabile ({delta_pct}% di variazione): la conversazione mantiene una varieta' costante di argomenti senza appiattirsi ne' espandersi significativamente."
+    diversity_growth: "Espansione narrativa ({delta_pct}% di keyword uniche in più): la conversazione si apre nel tempo a nuovi argomenti. Indica che il tema genera approfondimenti inattesi."
+    stable_diversity: "Diversità stabile ({delta_pct}% di variazione): la conversazione mantiene una varietà costante di argomenti senza appiattirsi né espandersi significativamente."
 
 confidence:
   levels:
@@ -427,7 +442,7 @@ confidence:
   fewer_than: "meno di {count} {noun}"
   sample_small: "campione ridotto ({why}): al massimo \"{cap}\""
   sample_medium: "campione medio ({why}): al massimo \"{cap}\""
-  # Stabilita' dalla posizione (consenso e spostamento); senza misura della posizione, dalla convinzione
+  # Stabilità dalla posizione (consenso e spostamento); senza misura della posizione, dalla convinzione
   stability_stance: "posizione ({group}): consenso {consensus}, {shift}: stabilità \"{stability}\""
   stability: "posizione non misurata, stabilità dalla convinzione (varianza {variance}, entropia della convinzione, ultimo round, {entropy}): \"{stability}\""
   line: "**Livello di confidenza: {label}** — calcolato dal sistema: {basis}."
@@ -480,8 +495,9 @@ errors:
   credential_exists: "Credenziale già presente con questo provider/label"
   plan_excludes_provider: "Il tuo piano non include il provider {provider}"
   # graph / progetti
-  project_limit: "Limite progetti raggiunto ({max}). Aggiorna il piano."
+  project_limit: "Limite progetti raggiunto ({max}). Contattaci per cambiare piano."
   graph_system_key_limit: "Hai usato le {limit} costruzioni del grafo al mese disponibili con la chiave di sistema condivisa. Aggiungi una tua chiave in Connessioni AI per costruirne altre."
+  billing_disabled: "I piani non sono disponibili in questa installazione."
   no_file: "Nessun file caricato"
   unsupported_format: "Formato non supportato. Usa: {formats}"
   file_too_large: "File troppo grande ({size} MB). Limite: {max} MB"

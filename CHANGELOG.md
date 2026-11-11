@@ -26,6 +26,26 @@ All notable changes to this project are documented here. The format follows
 - Continuous integration: backend tests with PostgreSQL, template validation, frontend checks and a
   gitleaks secret scan on every pull request and push to `main`.
 
+### Fixed
+
+- Italian text owned by the code uses real accents (no "e'", "piu'"); a test guards the catalogues,
+  the Italian template text and the frontend strings.
+- Report quotes never end mid-word: post excerpts are cut at the end of a sentence or of a word, and
+  a quote cut mid-word is shortened to its last complete sentence or removed.
+- No internal names in the report: excluded critical-voice archetypes, template ids, configuration
+  keys and sampling methods. The appendix states the same facts in plain language and explains the
+  two different caps (share of critical agents vs share of critical posts).
+- Top influencers are natural agents only; the critical voices' post counts are listed apart.
+- An agent never publishes the same post twice: one retry asking for something new, then the post
+  is skipped (`repetition_retries` / `repetition_skipped` in the run counters).
+- Report writing rules: complete sentences, agent lists as "name (role)".
+- Wrong consensus thresholds next to a level, list counts after a removed item, "enthusiastic
+  adoption" with few enthusiastic agents, the recommendations limitation in reports without
+  recommendations.
+- The feed tab shows the real number of posts (it stopped at 500) and the newest posts first.
+- The plans page lists the plans (it was empty for every user); with no payment flow, a change of
+  plan goes through the contact address, and a user on the highest plan is told so.
+
 ### Upgrade notes (from 1.0.0)
 
 1. Add `REDIS_PASSWORD` to `.env` (letters and digits only; `./start.sh` adds one).
