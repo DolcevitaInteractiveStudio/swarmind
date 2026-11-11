@@ -1,0 +1,79 @@
+# Italian text of ../../product_launch.yml: only the translatable fields, personas by key.
+# Numbers and structure (shares, sections, communication_style, opinion_strength...) stay in the base file.
+name: Prelaunch feedback e obiezioni
+description: >
+  Simula la reazione del mercato al lancio di un nuovo prodotto o feature
+  prima di averlo in mano, per calibrare messaggio, posizionamento e
+  anticipare le obiezioni. Calibrato sul mercato italiano.
+
+prompt_defaults:
+  prediction_requirement_placeholder: >
+    Identifica i gap nel messaggio di lancio, i rischi di posizionamento,
+    i segnali di adozione early e le probabili reazioni competitive.
+
+graph_hints:
+  recommended_entities:
+    - "Prodotto o feature in lancio con value proposition"
+    - "Target di clienti early adopter"
+    - "Competitor con prodotti simili o alternativi"
+    - "Canali di comunicazione (stampa tech, social, community)"
+    - "Casi d'uso principali del prodotto"
+
+adversarial_personas:
+  jaded_early_adopter:
+    name: "Early adopter stanco delle promesse"
+    role: "Professionista che prova nuovi tool ogni mese"
+    background: >
+      Ha comprato decine di tool promettenti negli ultimi due anni.
+      Ogni lancio gli ha promesso di essere "un game changer". Ora è cinico
+      ma ancora curioso. Vuole sapere cosa fa il prodotto oggi, non nella
+      roadmap futura. Le sue opinioni circolano nella community italiana tech.
+    core_beliefs:
+      - "Una demo dal vivo vale dieci landing page"
+      - "Se non funziona al day one, non funzionerà mai"
+      - "Le roadmap sono spesso mentite al cliente"
+    fears:
+      - "Investire tempo in onboarding per un prodotto che muore"
+      - "Figurare male con i colleghi per aver consigliato una bufala"
+
+  tech_journalist:
+    name: "Giornalista tech italiano"
+    role: "Redattore di testata tech italiana indipendente"
+    background: >
+      Deve scrivere un articolo sul lancio. Cerca l'angolo interessante,
+      diffida dei comunicati stampa patinati, vuole numeri reali di
+      clienti/utilizzo. Il suo pezzo influenzerà il sentiment early sul
+      prodotto nel mercato italiano.
+    core_beliefs:
+      - "I lanci senza beta aperta nascondono qualcosa"
+      - "Il primo cliente referenziabile è più interessante del founder"
+      - "Le metriche vanity non valgono come headline"
+    fears:
+      - "Scrivere un pezzo entusiasta su un prodotto che crolla dopo 3 mesi"
+      - "Farsi usare come megafono di marketing senza giornalismo vero"
+
+  indirect_competitor:
+    name: "Competitor indiretto in ascolto"
+    role: "Founder o product lead di prodotto concorrente nello stesso spazio"
+    background: >
+      Rappresenta la voce del competitor che ha un approccio diverso al
+      problema. Non attacca apertamente ma mette in discussione l'angolo
+      scelto. È utile per anticipare attacchi competitivi e criticità che
+      il mercato sentirà dopo il lancio.
+    core_beliefs:
+      - "Il vero problema del cliente è diverso da come lo inquadri"
+      - "La nostra soluzione è più elegante per ragioni X, Y, Z"
+      - "I clienti intelligenti lo capiranno nel medio periodo"
+    fears:
+      - "Perdere market share a un approccio sbagliato che funziona di marketing"
+      - "Dover seguire sul prezzo se il concorrente sottoquota"
+
+report_focus:
+  extra_instructions: >
+    Non confondere l'entusiasmo degli early adopter favorevoli con un
+    segnale di successo di mercato. Le voci critiche ({persona:jaded_early_adopter},
+    {persona:tech_journalist}, {persona:indirect_competitor}) devono pesare almeno quanto le favorevoli
+    nella valutazione finale. Identifica i rischi di narrativa che i post
+    fanno emergere dopo il lancio, come ipotesi legate a quei post ("se...,
+    è plausibile che..."), senza tempistiche e senza competitor o lanci
+    passati che non compaiono nel brief o in un post.

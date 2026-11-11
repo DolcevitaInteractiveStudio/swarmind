@@ -1,0 +1,1074 @@
+{
+ "public": {
+  "en": {
+   "lang": "en",
+   "landing_enabled": true,
+   "branding": {
+    "product_name": "SwarMind",
+    "logo": {
+     "dark": null,
+     "light": null
+    },
+    "favicon": null,
+    "colors": {
+     "dark": {
+      "primary": null,
+      "accent": null
+     },
+     "light": {
+      "primary": null,
+      "accent": null
+     }
+    }
+   },
+   "content": {
+    "hero": {
+     "title": "Stress-test your narrative before the market does",
+     "subtitle": "SwarMind simulates how a population of AI agents with different backgrounds reacts to a rebrand, a new price, a launch or a crisis statement. You see the objections, the arguments that spread and the voices that push back, so your client is prepared before launch. It does not predict the market: it shows what a message is likely to run into.",
+     "image": null,
+     "primary_cta": {
+      "label": "Request a demo",
+      "target": "#contact"
+     },
+     "secondary_cta": {
+      "label": "How it works",
+      "target": "#how"
+     }
+    },
+    "sections": [
+     {
+      "type": "value",
+      "enabled": true,
+      "title": "What it is for",
+      "intro": "A rehearsal for messages that cannot afford to fail on day one.",
+      "items": [
+       {
+        "title": "Find objections early",
+        "text": "See the doubts, comparisons and misreadings a message triggers before it reaches real customers."
+       },
+       {
+        "title": "Compare versions",
+        "text": "Run the same population against two names, two prices or two statements and compare the debates."
+       },
+       {
+        "title": "Arrive prepared",
+        "text": "Bring your client answers to the objections they will meet, with the debate that produced them."
+       },
+       {
+        "title": "Clear about its limits",
+        "text": "Agents are simulations, not respondents. Results are hypotheses to check with real people, not a forecast."
+       }
+      ]
+     },
+     {
+      "type": "how",
+      "enabled": true,
+      "title": "How it works",
+      "intro": "From a brief to a report in four steps.",
+      "items": [
+       {
+        "title": "Upload the brief",
+        "text": "Documents about the brand, the product and the market become the knowledge the agents draw on."
+       },
+       {
+        "title": "Generate the population",
+        "text": "SwarMind builds personas with different backgrounds, priorities and stances, including a limited share of deliberately critical voices."
+       },
+       {
+        "title": "Run the debate",
+        "text": "Over several rounds the agents post, reply and change their minds. The feed ranks what gains traction."
+       },
+       {
+        "title": "Read the report",
+        "text": "The report sums up the objections, the arguments that held and how the debate moved, with polarisation and echo-chamber measures."
+       }
+      ]
+     },
+     {
+      "type": "use_cases",
+      "enabled": true,
+      "title": "Use cases",
+      "intro": "Templates for the moments when a narrative is most exposed.",
+      "items": [
+       {
+        "title": "Rebranding",
+        "text": "Will long-time customers follow a new name or identity? Where does the bridge between generations break?"
+       },
+       {
+        "title": "Pricing",
+        "text": "How do buyers react to a new price or plan, and which objections come from procurement and finance?"
+       },
+       {
+        "title": "Product launch",
+        "text": "Which claims are believed, which are doubted, and what do people compare the product with?"
+       },
+       {
+        "title": "Crisis communication",
+        "text": "Which version of a statement contains the damage, and which one feeds it?"
+       },
+       {
+        "title": "Feature validation",
+        "text": "Does a new feature justify a price, or is it seen as noise?"
+       }
+      ]
+     },
+     {
+      "type": "deliverables",
+      "enabled": true,
+      "title": "What you get",
+      "intro": "Material you can take into a client meeting.",
+      "items": [
+       {
+        "title": "A structured report",
+        "text": "Main objections, supporting arguments, the most exposed groups and recommendations, in English or Italian."
+       },
+       {
+        "title": "The whole debate",
+        "text": "Every post and reply, by round and by agent, so each finding can be traced back to where it came from."
+       },
+       {
+        "title": "Debate measures",
+        "text": "Polarisation, echo-chamber index and diversity of information, computed from the simulation itself."
+       },
+       {
+        "title": "Conversations with agents",
+        "text": "Ask an agent why it changed its mind, or what would convince it."
+       },
+       {
+        "title": "PDF export",
+        "text": "A report you can share with the client team."
+       }
+      ]
+     },
+     {
+      "type": "open_source",
+      "enabled": true,
+      "title": "Open source",
+      "intro": "SwarMind is also an open-source project: you can run it on your own server, with your own model keys.",
+      "github_url": "",
+      "docs_url": "",
+      "license_name": "AGPL-3.0",
+      "install_snippet": "git clone <repository-url>.git swarmind\ncd swarmind\ncp .env.example .env   # then set ENCRYPTION_KEY: see the README\ndocker compose up -d"
+     },
+     {
+      "type": "contact",
+      "enabled": true,
+      "title": "Request a demo",
+      "intro": "Tell us about the launch, rebrand or statement you need to test. We will show you a simulation on a comparable case.",
+      "cta_label": "Write to us",
+      "email": "hello@example.com",
+      "url": ""
+     }
+    ],
+    "footer": {
+     "company_name": "",
+     "contact_email": "hello@example.com",
+     "privacy_url": "",
+     "terms_url": ""
+    },
+    "seo": {
+     "title": "SwarMind: stress-test your narrative before launch",
+     "description": "Simulate how a population of AI agents reacts to a rebrand, a price or a crisis statement, and prepare for the objections before launch.",
+     "og_image": null
+    }
+   }
+  },
+  "it": {
+   "lang": "it",
+   "landing_enabled": true,
+   "branding": {
+    "product_name": "SwarMind",
+    "logo": {
+     "dark": null,
+     "light": null
+    },
+    "favicon": null,
+    "colors": {
+     "dark": {
+      "primary": null,
+      "accent": null
+     },
+     "light": {
+      "primary": null,
+      "accent": null
+     }
+    }
+   },
+   "content": {
+    "hero": {
+     "title": "Metti alla prova la tua narrativa prima che lo faccia il mercato",
+     "subtitle": "SwarMind simula come reagisce una popolazione di agenti AI con profili diversi a un rebranding, a un nuovo prezzo, a un lancio o a un comunicato di crisi. Vedi le obiezioni, gli argomenti che si diffondono e le voci contrarie, così il tuo cliente arriva preparato al lancio. Non prevede il mercato: mostra che cosa un messaggio rischia di incontrare.",
+     "image": null,
+     "primary_cta": {
+      "label": "Richiedi una demo",
+      "target": "#contact"
+     },
+     "secondary_cta": {
+      "label": "Come funziona",
+      "target": "#how"
+     }
+    },
+    "sections": [
+     {
+      "type": "value",
+      "enabled": true,
+      "title": "A cosa serve",
+      "intro": "Una prova generale per i messaggi che non possono sbagliare il primo giorno.",
+      "items": [
+       {
+        "title": "Trova le obiezioni in anticipo",
+        "text": "Scopri dubbi, confronti e fraintendimenti che un messaggio provoca prima che arrivi ai clienti veri."
+       },
+       {
+        "title": "Confronta le versioni",
+        "text": "Metti la stessa popolazione davanti a due nomi, due prezzi o due comunicati e confronta i dibattiti."
+       },
+       {
+        "title": "Arriva preparato",
+        "text": "Porta al cliente le risposte alle obiezioni che incontrerà, insieme al dibattito da cui sono emerse."
+       },
+       {
+        "title": "Chiaro sui suoi limiti",
+        "text": "Gli agenti sono simulazioni, non intervistati. I risultati sono ipotesi da verificare con persone reali, non una previsione."
+       }
+      ]
+     },
+     {
+      "type": "how",
+      "enabled": true,
+      "title": "Come funziona",
+      "intro": "Dal brief al report in quattro passaggi.",
+      "items": [
+       {
+        "title": "Carica il brief",
+        "text": "I documenti su marchio, prodotto e mercato diventano le conoscenze a cui attingono gli agenti."
+       },
+       {
+        "title": "Genera la popolazione",
+        "text": "SwarMind crea personaggi con storie, priorità e posizioni diverse, compresa una quota limitata di voci deliberatamente critiche."
+       },
+       {
+        "title": "Avvia il dibattito",
+        "text": "Per diversi round gli agenti pubblicano, rispondono e cambiano idea. Il feed mette in evidenza ciò che prende piede."
+       },
+       {
+        "title": "Leggi il report",
+        "text": "Il report riassume le obiezioni, gli argomenti che hanno retto e come si è mosso il dibattito, con misure di polarizzazione e camere d'eco."
+       }
+      ]
+     },
+     {
+      "type": "use_cases",
+      "enabled": true,
+      "title": "Casi d'uso",
+      "intro": "Modelli per i momenti in cui una narrativa è più esposta.",
+      "items": [
+       {
+        "title": "Rebranding",
+        "text": "I clienti storici seguiranno un nuovo nome o una nuova identità? Dove si rompe il ponte tra generazioni?"
+       },
+       {
+        "title": "Prezzi",
+        "text": "Come reagiscono gli acquirenti a un nuovo prezzo o piano, e quali obiezioni arrivano da acquisti e finanza?"
+       },
+       {
+        "title": "Lancio di prodotto",
+        "text": "Quali promesse vengono credute, quali messe in dubbio, e con che cosa viene confrontato il prodotto?"
+       },
+       {
+        "title": "Comunicazione di crisi",
+        "text": "Quale versione di un comunicato contiene il danno, e quale lo alimenta?"
+       },
+       {
+        "title": "Validazione di funzionalità",
+        "text": "Una nuova funzionalità giustifica un prezzo, o viene percepita come rumore?"
+       }
+      ]
+     },
+     {
+      "type": "deliverables",
+      "enabled": true,
+      "title": "Che cosa ottieni",
+      "intro": "Materiale da portare in una riunione con il cliente.",
+      "items": [
+       {
+        "title": "Un report strutturato",
+        "text": "Obiezioni principali, argomenti a favore, i gruppi più esposti e raccomandazioni, in italiano o in inglese."
+       },
+       {
+        "title": "L'intero dibattito",
+        "text": "Ogni post e risposta, per round e per agente, così ogni risultato si può ricondurre alla sua origine."
+       },
+       {
+        "title": "Misure del dibattito",
+        "text": "Polarizzazione, indice di camera d'eco e varietà delle informazioni, calcolati dalla simulazione stessa."
+       },
+       {
+        "title": "Conversazioni con gli agenti",
+        "text": "Chiedi a un agente perché ha cambiato idea, o che cosa lo convincerebbe."
+       },
+       {
+        "title": "Esportazione PDF",
+        "text": "Un report da condividere con il team del cliente."
+       }
+      ]
+     },
+     {
+      "type": "open_source",
+      "enabled": true,
+      "title": "Open source",
+      "intro": "SwarMind è anche un progetto open source: puoi installarlo sul tuo server, con le tue chiavi dei modelli.",
+      "github_url": "",
+      "docs_url": "",
+      "license_name": "AGPL-3.0",
+      "install_snippet": "git clone <repository-url>.git swarmind\ncd swarmind\ncp .env.example .env   # poi imposta ENCRYPTION_KEY: vedi il README\ndocker compose up -d"
+     },
+     {
+      "type": "contact",
+      "enabled": true,
+      "title": "Richiedi una demo",
+      "intro": "Raccontaci il lancio, il rebranding o il comunicato che devi mettere alla prova. Ti mostriamo una simulazione su un caso simile.",
+      "cta_label": "Scrivici",
+      "email": "hello@example.com",
+      "url": ""
+     }
+    ],
+    "footer": {
+     "company_name": "",
+     "contact_email": "hello@example.com",
+     "privacy_url": "",
+     "terms_url": ""
+    },
+    "seo": {
+     "title": "SwarMind: metti alla prova la tua narrativa prima del lancio",
+     "description": "Simula come reagisce una popolazione di agenti AI a un rebranding, a un prezzo o a un comunicato di crisi, e preparati alle obiezioni prima del lancio.",
+     "og_image": null
+    }
+   }
+  }
+ },
+ "admin": {
+  "settings": {
+   "landing_enabled": true,
+   "branding": {
+    "product_name": "SwarMind",
+    "logo": {
+     "dark": null,
+     "light": null
+    },
+    "favicon": null,
+    "colors": {
+     "dark": {
+      "primary": null,
+      "accent": null
+     },
+     "light": {
+      "primary": null,
+      "accent": null
+     }
+    }
+   },
+   "content": {
+    "en": {
+     "hero": {
+      "title": "Stress-test your narrative before the market does",
+      "subtitle": "SwarMind simulates how a population of AI agents with different backgrounds reacts to a rebrand, a new price, a launch or a crisis statement. You see the objections, the arguments that spread and the voices that push back, so your client is prepared before launch. It does not predict the market: it shows what a message is likely to run into.",
+      "image": null,
+      "primary_cta": {
+       "label": "Request a demo",
+       "target": "#contact"
+      },
+      "secondary_cta": {
+       "label": "How it works",
+       "target": "#how"
+      }
+     },
+     "sections": [
+      {
+       "type": "value",
+       "enabled": true,
+       "title": "What it is for",
+       "intro": "A rehearsal for messages that cannot afford to fail on day one.",
+       "items": [
+        {
+         "title": "Find objections early",
+         "text": "See the doubts, comparisons and misreadings a message triggers before it reaches real customers."
+        },
+        {
+         "title": "Compare versions",
+         "text": "Run the same population against two names, two prices or two statements and compare the debates."
+        },
+        {
+         "title": "Arrive prepared",
+         "text": "Bring your client answers to the objections they will meet, with the debate that produced them."
+        },
+        {
+         "title": "Clear about its limits",
+         "text": "Agents are simulations, not respondents. Results are hypotheses to check with real people, not a forecast."
+        }
+       ]
+      },
+      {
+       "type": "how",
+       "enabled": true,
+       "title": "How it works",
+       "intro": "From a brief to a report in four steps.",
+       "items": [
+        {
+         "title": "Upload the brief",
+         "text": "Documents about the brand, the product and the market become the knowledge the agents draw on."
+        },
+        {
+         "title": "Generate the population",
+         "text": "SwarMind builds personas with different backgrounds, priorities and stances, including a limited share of deliberately critical voices."
+        },
+        {
+         "title": "Run the debate",
+         "text": "Over several rounds the agents post, reply and change their minds. The feed ranks what gains traction."
+        },
+        {
+         "title": "Read the report",
+         "text": "The report sums up the objections, the arguments that held and how the debate moved, with polarisation and echo-chamber measures."
+        }
+       ]
+      },
+      {
+       "type": "use_cases",
+       "enabled": true,
+       "title": "Use cases",
+       "intro": "Templates for the moments when a narrative is most exposed.",
+       "items": [
+        {
+         "title": "Rebranding",
+         "text": "Will long-time customers follow a new name or identity? Where does the bridge between generations break?"
+        },
+        {
+         "title": "Pricing",
+         "text": "How do buyers react to a new price or plan, and which objections come from procurement and finance?"
+        },
+        {
+         "title": "Product launch",
+         "text": "Which claims are believed, which are doubted, and what do people compare the product with?"
+        },
+        {
+         "title": "Crisis communication",
+         "text": "Which version of a statement contains the damage, and which one feeds it?"
+        },
+        {
+         "title": "Feature validation",
+         "text": "Does a new feature justify a price, or is it seen as noise?"
+        }
+       ]
+      },
+      {
+       "type": "deliverables",
+       "enabled": true,
+       "title": "What you get",
+       "intro": "Material you can take into a client meeting.",
+       "items": [
+        {
+         "title": "A structured report",
+         "text": "Main objections, supporting arguments, the most exposed groups and recommendations, in English or Italian."
+        },
+        {
+         "title": "The whole debate",
+         "text": "Every post and reply, by round and by agent, so each finding can be traced back to where it came from."
+        },
+        {
+         "title": "Debate measures",
+         "text": "Polarisation, echo-chamber index and diversity of information, computed from the simulation itself."
+        },
+        {
+         "title": "Conversations with agents",
+         "text": "Ask an agent why it changed its mind, or what would convince it."
+        },
+        {
+         "title": "PDF export",
+         "text": "A report you can share with the client team."
+        }
+       ]
+      },
+      {
+       "type": "open_source",
+       "enabled": true,
+       "title": "Open source",
+       "intro": "SwarMind is also an open-source project: you can run it on your own server, with your own model keys.",
+       "github_url": "",
+       "docs_url": "",
+       "license_name": "AGPL-3.0",
+       "install_snippet": "git clone <repository-url>.git swarmind\ncd swarmind\ncp .env.example .env   # then set ENCRYPTION_KEY: see the README\ndocker compose up -d"
+      },
+      {
+       "type": "contact",
+       "enabled": true,
+       "title": "Request a demo",
+       "intro": "Tell us about the launch, rebrand or statement you need to test. We will show you a simulation on a comparable case.",
+       "cta_label": "Write to us",
+       "email": "hello@example.com",
+       "url": ""
+      }
+     ],
+     "footer": {
+      "company_name": "",
+      "contact_email": "hello@example.com",
+      "privacy_url": "",
+      "terms_url": ""
+     },
+     "seo": {
+      "title": "SwarMind: stress-test your narrative before launch",
+      "description": "Simulate how a population of AI agents reacts to a rebrand, a price or a crisis statement, and prepare for the objections before launch.",
+      "og_image": null
+     }
+    },
+    "it": {
+     "hero": {
+      "title": "Metti alla prova la tua narrativa prima che lo faccia il mercato",
+      "subtitle": "SwarMind simula come reagisce una popolazione di agenti AI con profili diversi a un rebranding, a un nuovo prezzo, a un lancio o a un comunicato di crisi. Vedi le obiezioni, gli argomenti che si diffondono e le voci contrarie, così il tuo cliente arriva preparato al lancio. Non prevede il mercato: mostra che cosa un messaggio rischia di incontrare.",
+      "image": null,
+      "primary_cta": {
+       "label": "Richiedi una demo",
+       "target": "#contact"
+      },
+      "secondary_cta": {
+       "label": "Come funziona",
+       "target": "#how"
+      }
+     },
+     "sections": [
+      {
+       "type": "value",
+       "enabled": true,
+       "title": "A cosa serve",
+       "intro": "Una prova generale per i messaggi che non possono sbagliare il primo giorno.",
+       "items": [
+        {
+         "title": "Trova le obiezioni in anticipo",
+         "text": "Scopri dubbi, confronti e fraintendimenti che un messaggio provoca prima che arrivi ai clienti veri."
+        },
+        {
+         "title": "Confronta le versioni",
+         "text": "Metti la stessa popolazione davanti a due nomi, due prezzi o due comunicati e confronta i dibattiti."
+        },
+        {
+         "title": "Arriva preparato",
+         "text": "Porta al cliente le risposte alle obiezioni che incontrerà, insieme al dibattito da cui sono emerse."
+        },
+        {
+         "title": "Chiaro sui suoi limiti",
+         "text": "Gli agenti sono simulazioni, non intervistati. I risultati sono ipotesi da verificare con persone reali, non una previsione."
+        }
+       ]
+      },
+      {
+       "type": "how",
+       "enabled": true,
+       "title": "Come funziona",
+       "intro": "Dal brief al report in quattro passaggi.",
+       "items": [
+        {
+         "title": "Carica il brief",
+         "text": "I documenti su marchio, prodotto e mercato diventano le conoscenze a cui attingono gli agenti."
+        },
+        {
+         "title": "Genera la popolazione",
+         "text": "SwarMind crea personaggi con storie, priorità e posizioni diverse, compresa una quota limitata di voci deliberatamente critiche."
+        },
+        {
+         "title": "Avvia il dibattito",
+         "text": "Per diversi round gli agenti pubblicano, rispondono e cambiano idea. Il feed mette in evidenza ciò che prende piede."
+        },
+        {
+         "title": "Leggi il report",
+         "text": "Il report riassume le obiezioni, gli argomenti che hanno retto e come si è mosso il dibattito, con misure di polarizzazione e camere d'eco."
+        }
+       ]
+      },
+      {
+       "type": "use_cases",
+       "enabled": true,
+       "title": "Casi d'uso",
+       "intro": "Modelli per i momenti in cui una narrativa è più esposta.",
+       "items": [
+        {
+         "title": "Rebranding",
+         "text": "I clienti storici seguiranno un nuovo nome o una nuova identità? Dove si rompe il ponte tra generazioni?"
+        },
+        {
+         "title": "Prezzi",
+         "text": "Come reagiscono gli acquirenti a un nuovo prezzo o piano, e quali obiezioni arrivano da acquisti e finanza?"
+        },
+        {
+         "title": "Lancio di prodotto",
+         "text": "Quali promesse vengono credute, quali messe in dubbio, e con che cosa viene confrontato il prodotto?"
+        },
+        {
+         "title": "Comunicazione di crisi",
+         "text": "Quale versione di un comunicato contiene il danno, e quale lo alimenta?"
+        },
+        {
+         "title": "Validazione di funzionalità",
+         "text": "Una nuova funzionalità giustifica un prezzo, o viene percepita come rumore?"
+        }
+       ]
+      },
+      {
+       "type": "deliverables",
+       "enabled": true,
+       "title": "Che cosa ottieni",
+       "intro": "Materiale da portare in una riunione con il cliente.",
+       "items": [
+        {
+         "title": "Un report strutturato",
+         "text": "Obiezioni principali, argomenti a favore, i gruppi più esposti e raccomandazioni, in italiano o in inglese."
+        },
+        {
+         "title": "L'intero dibattito",
+         "text": "Ogni post e risposta, per round e per agente, così ogni risultato si può ricondurre alla sua origine."
+        },
+        {
+         "title": "Misure del dibattito",
+         "text": "Polarizzazione, indice di camera d'eco e varietà delle informazioni, calcolati dalla simulazione stessa."
+        },
+        {
+         "title": "Conversazioni con gli agenti",
+         "text": "Chiedi a un agente perché ha cambiato idea, o che cosa lo convincerebbe."
+        },
+        {
+         "title": "Esportazione PDF",
+         "text": "Un report da condividere con il team del cliente."
+        }
+       ]
+      },
+      {
+       "type": "open_source",
+       "enabled": true,
+       "title": "Open source",
+       "intro": "SwarMind è anche un progetto open source: puoi installarlo sul tuo server, con le tue chiavi dei modelli.",
+       "github_url": "",
+       "docs_url": "",
+       "license_name": "AGPL-3.0",
+       "install_snippet": "git clone <repository-url>.git swarmind\ncd swarmind\ncp .env.example .env   # poi imposta ENCRYPTION_KEY: vedi il README\ndocker compose up -d"
+      },
+      {
+       "type": "contact",
+       "enabled": true,
+       "title": "Richiedi una demo",
+       "intro": "Raccontaci il lancio, il rebranding o il comunicato che devi mettere alla prova. Ti mostriamo una simulazione su un caso simile.",
+       "cta_label": "Scrivici",
+       "email": "hello@example.com",
+       "url": ""
+      }
+     ],
+     "footer": {
+      "company_name": "",
+      "contact_email": "hello@example.com",
+      "privacy_url": "",
+      "terms_url": ""
+     },
+     "seo": {
+      "title": "SwarMind: metti alla prova la tua narrativa prima del lancio",
+      "description": "Simula come reagisce una popolazione di agenti AI a un rebranding, a un prezzo o a un comunicato di crisi, e preparati alle obiezioni prima del lancio.",
+      "og_image": null
+     }
+    }
+   }
+  },
+  "revision": 4,
+  "updated_at": "2026-11-10T09:30:00+00:00",
+  "defaults": {
+   "landing_enabled": false,
+   "branding": {
+    "product_name": "SwarMind",
+    "logo": {
+     "dark": null,
+     "light": null
+    },
+    "favicon": null,
+    "colors": {
+     "dark": {
+      "primary": null,
+      "accent": null
+     },
+     "light": {
+      "primary": null,
+      "accent": null
+     }
+    }
+   },
+   "content": {
+    "en": {
+     "hero": {
+      "title": "Stress-test your narrative before the market does",
+      "subtitle": "SwarMind simulates how a population of AI agents with different backgrounds reacts to a rebrand, a new price, a launch or a crisis statement. You see the objections, the arguments that spread and the voices that push back, so your client is prepared before launch. It does not predict the market: it shows what a message is likely to run into.",
+      "image": null,
+      "primary_cta": {
+       "label": "Request a demo",
+       "target": "#contact"
+      },
+      "secondary_cta": {
+       "label": "How it works",
+       "target": "#how"
+      }
+     },
+     "sections": [
+      {
+       "type": "value",
+       "enabled": true,
+       "title": "What it is for",
+       "intro": "A rehearsal for messages that cannot afford to fail on day one.",
+       "items": [
+        {
+         "title": "Find objections early",
+         "text": "See the doubts, comparisons and misreadings a message triggers before it reaches real customers."
+        },
+        {
+         "title": "Compare versions",
+         "text": "Run the same population against two names, two prices or two statements and compare the debates."
+        },
+        {
+         "title": "Arrive prepared",
+         "text": "Bring your client answers to the objections they will meet, with the debate that produced them."
+        },
+        {
+         "title": "Clear about its limits",
+         "text": "Agents are simulations, not respondents. Results are hypotheses to check with real people, not a forecast."
+        }
+       ]
+      },
+      {
+       "type": "how",
+       "enabled": true,
+       "title": "How it works",
+       "intro": "From a brief to a report in four steps.",
+       "items": [
+        {
+         "title": "Upload the brief",
+         "text": "Documents about the brand, the product and the market become the knowledge the agents draw on."
+        },
+        {
+         "title": "Generate the population",
+         "text": "SwarMind builds personas with different backgrounds, priorities and stances, including a limited share of deliberately critical voices."
+        },
+        {
+         "title": "Run the debate",
+         "text": "Over several rounds the agents post, reply and change their minds. The feed ranks what gains traction."
+        },
+        {
+         "title": "Read the report",
+         "text": "The report sums up the objections, the arguments that held and how the debate moved, with polarisation and echo-chamber measures."
+        }
+       ]
+      },
+      {
+       "type": "use_cases",
+       "enabled": true,
+       "title": "Use cases",
+       "intro": "Templates for the moments when a narrative is most exposed.",
+       "items": [
+        {
+         "title": "Rebranding",
+         "text": "Will long-time customers follow a new name or identity? Where does the bridge between generations break?"
+        },
+        {
+         "title": "Pricing",
+         "text": "How do buyers react to a new price or plan, and which objections come from procurement and finance?"
+        },
+        {
+         "title": "Product launch",
+         "text": "Which claims are believed, which are doubted, and what do people compare the product with?"
+        },
+        {
+         "title": "Crisis communication",
+         "text": "Which version of a statement contains the damage, and which one feeds it?"
+        },
+        {
+         "title": "Feature validation",
+         "text": "Does a new feature justify a price, or is it seen as noise?"
+        }
+       ]
+      },
+      {
+       "type": "deliverables",
+       "enabled": true,
+       "title": "What you get",
+       "intro": "Material you can take into a client meeting.",
+       "items": [
+        {
+         "title": "A structured report",
+         "text": "Main objections, supporting arguments, the most exposed groups and recommendations, in English or Italian."
+        },
+        {
+         "title": "The whole debate",
+         "text": "Every post and reply, by round and by agent, so each finding can be traced back to where it came from."
+        },
+        {
+         "title": "Debate measures",
+         "text": "Polarisation, echo-chamber index and diversity of information, computed from the simulation itself."
+        },
+        {
+         "title": "Conversations with agents",
+         "text": "Ask an agent why it changed its mind, or what would convince it."
+        },
+        {
+         "title": "PDF export",
+         "text": "A report you can share with the client team."
+        }
+       ]
+      },
+      {
+       "type": "open_source",
+       "enabled": true,
+       "title": "Open source",
+       "intro": "SwarMind is also an open-source project: you can run it on your own server, with your own model keys.",
+       "github_url": "",
+       "docs_url": "",
+       "license_name": "AGPL-3.0",
+       "install_snippet": "git clone <repository-url>.git swarmind\ncd swarmind\ncp .env.example .env   # then set ENCRYPTION_KEY: see the README\ndocker compose up -d"
+      },
+      {
+       "type": "contact",
+       "enabled": true,
+       "title": "Request a demo",
+       "intro": "Tell us about the launch, rebrand or statement you need to test. We will show you a simulation on a comparable case.",
+       "cta_label": "Write to us",
+       "email": "hello@example.com",
+       "url": ""
+      }
+     ],
+     "footer": {
+      "company_name": "",
+      "contact_email": "hello@example.com",
+      "privacy_url": "",
+      "terms_url": ""
+     },
+     "seo": {
+      "title": "SwarMind: stress-test your narrative before launch",
+      "description": "Simulate how a population of AI agents reacts to a rebrand, a price or a crisis statement, and prepare for the objections before launch.",
+      "og_image": null
+     }
+    },
+    "it": {
+     "hero": {
+      "title": "Metti alla prova la tua narrativa prima che lo faccia il mercato",
+      "subtitle": "SwarMind simula come reagisce una popolazione di agenti AI con profili diversi a un rebranding, a un nuovo prezzo, a un lancio o a un comunicato di crisi. Vedi le obiezioni, gli argomenti che si diffondono e le voci contrarie, così il tuo cliente arriva preparato al lancio. Non prevede il mercato: mostra che cosa un messaggio rischia di incontrare.",
+      "image": null,
+      "primary_cta": {
+       "label": "Richiedi una demo",
+       "target": "#contact"
+      },
+      "secondary_cta": {
+       "label": "Come funziona",
+       "target": "#how"
+      }
+     },
+     "sections": [
+      {
+       "type": "value",
+       "enabled": true,
+       "title": "A cosa serve",
+       "intro": "Una prova generale per i messaggi che non possono sbagliare il primo giorno.",
+       "items": [
+        {
+         "title": "Trova le obiezioni in anticipo",
+         "text": "Scopri dubbi, confronti e fraintendimenti che un messaggio provoca prima che arrivi ai clienti veri."
+        },
+        {
+         "title": "Confronta le versioni",
+         "text": "Metti la stessa popolazione davanti a due nomi, due prezzi o due comunicati e confronta i dibattiti."
+        },
+        {
+         "title": "Arriva preparato",
+         "text": "Porta al cliente le risposte alle obiezioni che incontrerà, insieme al dibattito da cui sono emerse."
+        },
+        {
+         "title": "Chiaro sui suoi limiti",
+         "text": "Gli agenti sono simulazioni, non intervistati. I risultati sono ipotesi da verificare con persone reali, non una previsione."
+        }
+       ]
+      },
+      {
+       "type": "how",
+       "enabled": true,
+       "title": "Come funziona",
+       "intro": "Dal brief al report in quattro passaggi.",
+       "items": [
+        {
+         "title": "Carica il brief",
+         "text": "I documenti su marchio, prodotto e mercato diventano le conoscenze a cui attingono gli agenti."
+        },
+        {
+         "title": "Genera la popolazione",
+         "text": "SwarMind crea personaggi con storie, priorità e posizioni diverse, compresa una quota limitata di voci deliberatamente critiche."
+        },
+        {
+         "title": "Avvia il dibattito",
+         "text": "Per diversi round gli agenti pubblicano, rispondono e cambiano idea. Il feed mette in evidenza ciò che prende piede."
+        },
+        {
+         "title": "Leggi il report",
+         "text": "Il report riassume le obiezioni, gli argomenti che hanno retto e come si è mosso il dibattito, con misure di polarizzazione e camere d'eco."
+        }
+       ]
+      },
+      {
+       "type": "use_cases",
+       "enabled": true,
+       "title": "Casi d'uso",
+       "intro": "Modelli per i momenti in cui una narrativa è più esposta.",
+       "items": [
+        {
+         "title": "Rebranding",
+         "text": "I clienti storici seguiranno un nuovo nome o una nuova identità? Dove si rompe il ponte tra generazioni?"
+        },
+        {
+         "title": "Prezzi",
+         "text": "Come reagiscono gli acquirenti a un nuovo prezzo o piano, e quali obiezioni arrivano da acquisti e finanza?"
+        },
+        {
+         "title": "Lancio di prodotto",
+         "text": "Quali promesse vengono credute, quali messe in dubbio, e con che cosa viene confrontato il prodotto?"
+        },
+        {
+         "title": "Comunicazione di crisi",
+         "text": "Quale versione di un comunicato contiene il danno, e quale lo alimenta?"
+        },
+        {
+         "title": "Validazione di funzionalità",
+         "text": "Una nuova funzionalità giustifica un prezzo, o viene percepita come rumore?"
+        }
+       ]
+      },
+      {
+       "type": "deliverables",
+       "enabled": true,
+       "title": "Che cosa ottieni",
+       "intro": "Materiale da portare in una riunione con il cliente.",
+       "items": [
+        {
+         "title": "Un report strutturato",
+         "text": "Obiezioni principali, argomenti a favore, i gruppi più esposti e raccomandazioni, in italiano o in inglese."
+        },
+        {
+         "title": "L'intero dibattito",
+         "text": "Ogni post e risposta, per round e per agente, così ogni risultato si può ricondurre alla sua origine."
+        },
+        {
+         "title": "Misure del dibattito",
+         "text": "Polarizzazione, indice di camera d'eco e varietà delle informazioni, calcolati dalla simulazione stessa."
+        },
+        {
+         "title": "Conversazioni con gli agenti",
+         "text": "Chiedi a un agente perché ha cambiato idea, o che cosa lo convincerebbe."
+        },
+        {
+         "title": "Esportazione PDF",
+         "text": "Un report da condividere con il team del cliente."
+        }
+       ]
+      },
+      {
+       "type": "open_source",
+       "enabled": true,
+       "title": "Open source",
+       "intro": "SwarMind è anche un progetto open source: puoi installarlo sul tuo server, con le tue chiavi dei modelli.",
+       "github_url": "",
+       "docs_url": "",
+       "license_name": "AGPL-3.0",
+       "install_snippet": "git clone <repository-url>.git swarmind\ncd swarmind\ncp .env.example .env   # poi imposta ENCRYPTION_KEY: vedi il README\ndocker compose up -d"
+      },
+      {
+       "type": "contact",
+       "enabled": true,
+       "title": "Richiedi una demo",
+       "intro": "Raccontaci il lancio, il rebranding o il comunicato che devi mettere alla prova. Ti mostriamo una simulazione su un caso simile.",
+       "cta_label": "Scrivici",
+       "email": "hello@example.com",
+       "url": ""
+      }
+     ],
+     "footer": {
+      "company_name": "",
+      "contact_email": "hello@example.com",
+      "privacy_url": "",
+      "terms_url": ""
+     },
+     "seo": {
+      "title": "SwarMind: metti alla prova la tua narrativa prima del lancio",
+      "description": "Simula come reagisce una popolazione di agenti AI a un rebranding, a un prezzo o a un comunicato di crisi, e preparati alle obiezioni prima del lancio.",
+      "og_image": null
+     }
+    }
+   }
+  },
+  "limits": {
+   "product_name": 40,
+   "hero_title": 140,
+   "hero_subtitle": 500,
+   "cta_label": 40,
+   "section_title": 100,
+   "section_intro": 600,
+   "item_title": 80,
+   "item_text": 400,
+   "license_name": 60,
+   "install_snippet": 1000,
+   "install_snippet_lines": 15,
+   "company_name": 120,
+   "email": 254,
+   "url": 500,
+   "seo_title": 90,
+   "seo_description": 300
+  },
+  "item_limits": {
+   "value": 6,
+   "how": 6,
+   "use_cases": 8,
+   "deliverables": 8
+  },
+  "upload": {
+   "logo": {
+    "max_bytes": 2097152,
+    "min": [
+     16,
+     16
+    ],
+    "max": [
+     4096,
+     4096
+    ]
+   },
+   "favicon": {
+    "max_bytes": 1048576,
+    "min": [
+     16,
+     16
+    ],
+    "max": [
+     2048,
+     2048
+    ]
+   },
+   "og": {
+    "max_bytes": 5242880,
+    "min": [
+     200,
+     200
+    ],
+    "max": [
+     6000,
+     6000
+    ]
+   },
+   "image": {
+    "max_bytes": 5242880,
+    "min": [
+     64,
+     64
+    ],
+    "max": [
+     6000,
+     6000
+    ]
+   }
+  }
+ }
+}

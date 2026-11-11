@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#13171d" />
+  <!-- lang and title follow the UI locale at runtime (src/i18n/index.js) -->
+  <title>SwarMind</title>
+  <!-- Replaced at runtime by the favicon uploaded in the admin area (src/theme/brand.js) -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <!-- Defaults for crawlers that do not run scripts; the landing replaces them with the SEO
+       settings from the admin area (src/site/site.js, setPageMeta) -->
+  <meta name="description" content="Simulate how a population of AI agents reacts to a rebrand, a price or a crisis statement, and prepare for the objections before launch." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="SwarMind: stress-test your narrative before launch" />
+  <meta property="og:description" content="Simulate how a population of AI agents reacts to a rebrand, a price or a crisis statement, and prepare for the objections before launch." />
+  <!-- Saved theme before first paint; external file because the CSP allows script-src 'self' only -->
+  <script src="/theme-init.js"></script>
+  <!-- Canvas colour until the stylesheet loads (design tokens: src/styles/tokens.css) -->
+  <style>
+    html { background: #13171d; }
+    html[data-theme="light"] { background: #f2f4f7; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

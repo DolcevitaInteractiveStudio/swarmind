@@ -1,0 +1,106 @@
+{
+  "spec_source": "tests/fixtures/population_specs/quillfern_pricing.json",
+  "agents_count": 4,
+  "failures_count": 0,
+  "by_segment": {
+    "loyal_subscribers": 1,
+    "price_sensitive": 1,
+    "eco_minded": 1,
+    "competitor_switchers": 1
+  },
+  "agents": [
+    {
+      "agent_id": "fx000001",
+      "entity_id": "segment:loyal_subscribers",
+      "entity_type": "PERSON",
+      "simulation_id": "fixture",
+      "persona": {
+        "name": "Nora Fielding",
+        "role": "Subscriber for two years",
+        "background": "Fictional persona. Nora works as a librarian and drinks three cups of tea a day; she has kept the subscription since its second month.",
+        "personality": {"openness": 0.6, "conscientiousness": 0.7, "extraversion": 0.4, "agreeableness": 0.7, "neuroticism": 0.3, "risk_appetite": 0.3, "trust_institutions": 0.6, "influence_susceptibility": 0.4},
+        "core_beliefs": ["Good tea is worth paying for", "A company should explain a price change"],
+        "motivations": ["Keep receiving teas she likes"],
+        "fears": ["The quality going down while the price goes up"],
+        "communication_style": "Calm and detailed.",
+        "initial_opinion": "I can accept a higher price if the tea stays as good as it is now.",
+        "opinion_strength": 0.5,
+        "emotional_state": "neutral"
+      },
+      "current_opinion": "I can accept a higher price if the tea stays as good as it is now.",
+      "opinion_strength": 0.5,
+      "emotional_state": "neutral",
+      "is_adversarial": false
+    },
+    {
+      "agent_id": "fx000002",
+      "entity_id": "segment:price_sensitive",
+      "entity_type": "PERSON",
+      "simulation_id": "fixture",
+      "persona": {
+        "name": "Tomas Brandt",
+        "role": "Student and subscriber",
+        "background": "Fictional persona. Tomas keeps a spreadsheet of every subscription he pays for and reviews it each month.",
+        "personality": {"openness": 0.5, "conscientiousness": 0.8, "extraversion": 0.5, "agreeableness": 0.4, "neuroticism": 0.5, "risk_appetite": 0.2, "trust_institutions": 0.4, "influence_susceptibility": 0.5},
+        "core_beliefs": ["Three euros a month is thirty-six a year"],
+        "motivations": ["Spend less on recurring costs"],
+        "fears": ["Being charged before he decides"],
+        "communication_style": "Short, quotes numbers.",
+        "initial_opinion": "Thirty percent more is too much; I will probably cancel.",
+        "opinion_strength": 0.7,
+        "emotional_state": "skeptical"
+      },
+      "current_opinion": "Thirty percent more is too much; I will probably cancel.",
+      "opinion_strength": 0.7,
+      "emotional_state": "skeptical",
+      "is_adversarial": false
+    },
+    {
+      "agent_id": "fx000003",
+      "entity_id": "segment:eco_minded",
+      "entity_type": "PERSON",
+      "simulation_id": "fixture",
+      "persona": {
+        "name": "Ilse Moreau",
+        "role": "Subscriber who chooses brands for their packaging",
+        "background": "Fictional persona. Ilse runs a small repair café in her neighbourhood and avoids single-use plastic at home.",
+        "personality": {"openness": 0.8, "conscientiousness": 0.6, "extraversion": 0.6, "agreeableness": 0.6, "neuroticism": 0.4, "risk_appetite": 0.5, "trust_institutions": 0.3, "influence_susceptibility": 0.4},
+        "core_beliefs": ["Packaging claims need proof"],
+        "motivations": ["Less waste in her kitchen"],
+        "fears": ["A green label used as an excuse"],
+        "communication_style": "Asks for evidence.",
+        "initial_opinion": "Compostable pouches are welcome, but which certification do they have?",
+        "opinion_strength": 0.5,
+        "emotional_state": "curious"
+      },
+      "current_opinion": "Compostable pouches are welcome, but which certification do they have?",
+      "opinion_strength": 0.5,
+      "emotional_state": "curious",
+      "is_adversarial": false
+    },
+    {
+      "agent_id": "fx000004",
+      "entity_id": "segment:competitor_switchers",
+      "entity_type": "PERSON",
+      "simulation_id": "fixture",
+      "persona": {
+        "name": "Rafael Okafor",
+        "role": "Subscriber who tried other tea boxes",
+        "background": "Fictional persona. Rafael has tried three tea subscriptions in two years and writes short reviews for friends.",
+        "personality": {"openness": 0.7, "conscientiousness": 0.5, "extraversion": 0.7, "agreeableness": 0.5, "neuroticism": 0.3, "risk_appetite": 0.6, "trust_institutions": 0.5, "influence_susceptibility": 0.6},
+        "core_beliefs": ["Loyalty has to be earned every month"],
+        "motivations": ["Best tea for the money"],
+        "fears": ["Staying with a box that is no longer the best deal"],
+        "communication_style": "Informal, compares offers.",
+        "initial_opinion": "At this price I will compare it again with the other boxes.",
+        "opinion_strength": 0.6,
+        "emotional_state": "neutral"
+      },
+      "current_opinion": "At this price I will compare it again with the other boxes.",
+      "opinion_strength": 0.6,
+      "emotional_state": "neutral",
+      "is_adversarial": false
+    }
+  ],
+  "failures": []
+}

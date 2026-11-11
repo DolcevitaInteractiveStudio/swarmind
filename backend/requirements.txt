@@ -1,0 +1,51 @@
+# Versioni del worker di produzione (verificato con le simulazioni).
+# Il set completo dei transitivi e' in constraints.txt: pip install -r requirements.txt -c constraints.txt
+flask==3.0.3
+flask-cors==4.0.1
+flask-socketio==5.3.6
+flask-sqlalchemy==3.1.1
+flask-migrate==4.0.7
+gunicorn==22.0.0
+gevent==24.2.1
+gevent-websocket==0.10.1
+celery==5.4.0
+redis==5.0.8
+groq==0.9.0
+openai==1.35.0
+anthropic==0.28.0
+PyJWT==2.8.0
+cryptography==42.0.8
+werkzeug==3.0.3
+sqlalchemy==2.0.31
+psycopg2-binary==2.9.9
+alembic==1.13.2
+chromadb==1.0.21
+pypdf2==3.0.1
+python-docx==1.1.2
+markdown==3.6
+pydantic==2.7.4
+numpy==1.26.4
+networkx==3.3
+stripe==10.1.0
+python-dotenv==1.0.1
+httpx==0.27.0
+tenacity==8.3.0
+structlog==24.2.0
+shortuuid==1.0.13
+flower==2.0.1
+reportlab==4.4.10
+# Importati direttamente dal codice (arrivano anche come transitivi di chromadb)
+PyYAML==6.0.3
+huggingface_hub==0.36.2
+onnxruntime==1.24.4
+tokenizers==0.22.2
+# zoneinfo (Europe/Rome per la quota mensile): python:slim non ha i fusi di sistema
+tzdata==2026.1
+# Re-encoding of the images uploaded for the landing page and branding (core/site_settings.py)
+pillow==12.2.0
+# Transitivi critici. kombu 5.7 rifiuta redis==5.0.8 e il worker non parte
+kombu==5.6.2
+amqp==5.3.1
+billiard==4.2.4
+vine==5.1.0
+protobuf==6.33.6

@@ -1,0 +1,204 @@
+/* ==========================================================================
+   SwarMind design tokens
+   Dark is the default theme (no data-theme, or data-theme="dark");
+   light applies with <html data-theme="light"> (src/theme/theme.js).
+
+   Brand tokens (--brand-*) are the only values meant to be overridden at
+   runtime (src/theme/brand.js, applyBrand, which also sets the product name
+   and logo used by BrandMark.vue). Everything else derives from them
+   or from the neutral scale, so an override recolours buttons, links, focus,
+   progress and selection without touching any component.
+
+   Breakpoints (media queries cannot read custom properties):
+     phone    < 600px
+     tablet   600px – 1023px   (drawer navigation below 1024px)
+     desktop  ≥ 1024px         (persistent sidebar)
+   ========================================================================== */
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Brand (runtime-overridable) */
+  --brand-primary: #4fb6c2;
+  --brand-on-primary: #06262b;
+  --brand-accent: #a898ff;
+
+  /* Background layers, back to front */
+  --bg-canvas: #13171d;
+  --bg-surface: #1a1f27;
+  --bg-raised: #222833;
+  --bg-sunken: #10141a;
+  --bg-hover: #262d38;
+  --bg-overlay: rgb(5 8 12 / 0.66);
+
+  /* Text levels */
+  --text-1: #e7eaef;
+  --text-2: #b0b8c4;
+  --text-3: #8f99a8;
+  --text-disabled: #6b7482;
+
+  /* Borders */
+  --border-subtle: #262c36;
+  --border: #323a46;
+  --border-strong: #46505d;
+  --border-control: #67717f;
+
+  /* Status (text/icon colour on surfaces) */
+  --success: #5cc48a;
+  --warning: #e8a73e;
+  --danger: #f2766b;
+  --info: #74a9f5;
+
+  /* Categorical chart palette: distinguishable in order, AA-ish against surface */
+  --chart-1: #4fb6c2;
+  --chart-2: #a898ff;
+  --chart-3: #e8a73e;
+  --chart-4: #f07ca0;
+  --chart-5: #6cc58f;
+  --chart-6: #74a9f5;
+  --chart-7: #c9b48a;
+  --chart-8: #9aa5b5;
+
+  --shadow-overlay: 0 24px 48px -12px rgb(0 0 0 / 0.6), 0 0 0 1px var(--border);
+  --shadow-pop: 0 8px 24px -8px rgb(0 0 0 / 0.55);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --brand-primary: #0a6f7b;
+  --brand-on-primary: #ffffff;
+  --brand-accent: #5a48d0;
+
+  --bg-canvas: #f2f4f7;
+  --bg-surface: #ffffff;
+  --bg-raised: #f7f8fa;
+  --bg-sunken: #fbfcfd;
+  --bg-hover: #edf0f4;
+  --bg-overlay: rgb(16 22 30 / 0.45);
+
+  --text-1: #151a21;
+  --text-2: #4b5462;
+  --text-3: #5f6876;
+  --text-disabled: #8d95a1;
+
+  --border-subtle: #e6e9ee;
+  --border: #d5dae1;
+  --border-strong: #b4bcc8;
+  --border-control: #878f9c;
+
+  --success: #186d3a;
+  --warning: #8f5508;
+  --danger: #bf3328;
+  --info: #1f62c4;
+
+  --chart-1: #0a6f7b;
+  --chart-2: #5a48d0;
+  --chart-3: #b06d00;
+  --chart-4: #c2416d;
+  --chart-5: #2b8a50;
+  --chart-6: #2c6fd1;
+  --chart-7: #8c7448;
+  --chart-8: #687282;
+
+  --shadow-overlay: 0 24px 48px -12px rgb(16 22 30 / 0.28), 0 0 0 1px var(--border);
+  --shadow-pop: 0 8px 24px -8px rgb(16 22 30 / 0.22);
+}
+
+/* Derived and theme-independent tokens */
+:root {
+  /* Primary, derived from the brand so a runtime override cascades */
+  --primary: var(--brand-primary);
+  --on-primary: var(--brand-on-primary);
+  --primary-hover: color-mix(in srgb, var(--brand-primary) 84%, var(--text-1));
+  --primary-subtle: color-mix(in srgb, var(--brand-primary) 15%, var(--bg-surface));
+  --primary-border: color-mix(in srgb, var(--brand-primary) 55%, var(--bg-surface));
+  --accent: var(--brand-accent);
+
+  --success-subtle: color-mix(in srgb, var(--success) 14%, var(--bg-surface));
+  --warning-subtle: color-mix(in srgb, var(--warning) 14%, var(--bg-surface));
+  --danger-subtle: color-mix(in srgb, var(--danger) 14%, var(--bg-surface));
+  --info-subtle: color-mix(in srgb, var(--info) 14%, var(--bg-surface));
+  --success-border: color-mix(in srgb, var(--success) 45%, var(--bg-surface));
+  --warning-border: color-mix(in srgb, var(--warning) 45%, var(--bg-surface));
+  --danger-border: color-mix(in srgb, var(--danger) 45%, var(--bg-surface));
+  --info-border: color-mix(in srgb, var(--info) 45%, var(--bg-surface));
+
+  --focus-color: var(--brand-primary);
+  --focus-ring: 2px solid var(--focus-color);
+  --focus-offset: 2px;
+
+  /* Typography */
+  --font-sans: 'IBM Plex Sans Variable', 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Consolas, 'Liberation Mono', monospace;
+
+  --text-xs: 0.75rem;     /* 12 meta, badges */
+  --text-sm: 0.8125rem;   /* 13 secondary, table cells */
+  --text-md: 0.875rem;    /* 14 UI body */
+  --text-base: 1rem;      /* 16 reading body (report, feed on phones) */
+  --text-lg: 1.125rem;    /* 18 card and modal titles */
+  --text-xl: 1.375rem;    /* 22 page titles */
+  --text-2xl: 1.75rem;    /* 28 key figures */
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-reading: 1.65;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  --measure: 68ch;        /* reading column */
+
+  /* Spacing, 4px base */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  --gutter: var(--space-4);          /* page side padding, 16px on phones */
+  --content-max: 72rem;              /* 1152px */
+
+  /* Radii: a hierarchy, not one value everywhere */
+  --radius-control: 6px;
+  --radius-container: 8px;
+  --radius-overlay: 12px;
+  --radius-pill: 999px;
+
+  /* Sizing */
+  --control-h: 2.25rem;              /* 36px with a mouse */
+  --touch-min: 2.75rem;              /* 44px */
+  --sidebar-w: 15.5rem;              /* 248px */
+  --topbar-h: 3.5rem;                /* 56px */
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur-med: 220ms;
+
+  --z-sticky: 20;
+  --z-drawer: 60;
+  --z-modal: 100;
+  --z-toast: 120;
+}
+
+@media (min-width: 600px) {
+  :root { --gutter: var(--space-6); }
+}
+@media (min-width: 1024px) {
+  :root { --gutter: var(--space-8); }
+}
+/* Touch targets: 44px on phones, tablets and any coarse pointer */
+@media (max-width: 1023px), (pointer: coarse) {
+  :root { --control-h: var(--touch-min); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-med: 0ms; }
+}
+

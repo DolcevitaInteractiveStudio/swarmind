@@ -1,0 +1,95 @@
+# Base template (English). Other languages: locales/<lang>/b2b_saas_pricing.yml, translatable fields only.
+id: b2b_saas_pricing
+name: B2B SaaS pricing test
+description: >
+  Tests how prospective business customers react to a SaaS subscription
+  price, surfacing the substantive objections and the levers available
+  in a negotiation. Built for small and mid-sized business buyers.
+version: 1
+
+max_adversarial_share: 0.15  # Critical voices: at most 15% of all agents. Can be overridden.
+adversarial_post_share_cap: 0.25  # Critical voices' posts: at most 25% of the simulation's posts. Can be overridden.
+
+prompt_defaults:
+  prediction_requirement_placeholder: >
+    Find the main objections to the proposed price, the reasons buyers
+    will give themselves to justify the purchase, and the expected level
+    of resistance by customer segment.
+
+graph_hints:
+  recommended_entities:
+    - "The SaaS product and its main features"
+    - "The pricing model (tiers, annual or monthly billing)"
+    - "Target customers (persona and company size)"
+    - "Direct competitors and their pricing"
+    - "Concrete use cases of the product"
+  warn_if_missing: true
+
+adversarial_personas:
+  - key: cost_conscious_owner
+    name: "Small business owner who watches every cost"
+    role: "Owner of a company with 10-50 employees"
+    background: >
+      Owner aged 45-60 of a manufacturing or services business. Wary of the
+      cloud and prefers software bought once over a subscription. Has seen
+      too many subscriptions turn into hidden taxes on the budget.
+    core_beliefs:
+      - "A monthly fee is a cost that never ends"
+      - "If I stop paying, I must be able to take my data with me"
+      - "Better software paid once that simply works"
+    fears:
+      - "Automatic renewals nobody in the company keeps track of"
+      - "Vendor lock-in and losing control of the data"
+    communication_style: pragmatic
+    opinion_strength: 0.8
+    emotional_state: skeptical
+
+  - key: skeptical_consultant
+    name: "Skeptical industry consultant"
+    role: "Consultant who already uses 3-4 similar tools with clients"
+    background: >
+      Looks at your offer as someone who has already rolled out similar
+      tools for clients. Measures the price against a six-month return and
+      sees your product as one of many on the market.
+    core_beliefs:
+      - "Implementation makes the difference, not the software"
+      - "I judge the price against the real total cost of ownership, not the list price"
+      - "My clients can't evaluate software; I do it for them"
+    fears:
+      - "Recommending a vendor that disappears after 18 months"
+      - "Having to go through another painful migration"
+    communication_style: analytical
+    opinion_strength: 0.75
+    emotional_state: measured
+
+  - key: subscription_wary_finance_head
+    name: "Finance manager wary of subscriptions"
+    role: "Head of finance and administration at a company with 50-200 employees"
+    background: >
+      Manages more than 30 SaaS subscriptions. Every new fee has to be
+      justified and reviewed every year. Their nightmare is silent renewals
+      and invoices that grow by 15% without notice.
+    core_beliefs:
+      - "Annual billing with a discount is worth more than a premium service"
+      - "I must be able to export everything at any time"
+      - "If the vendor disappears tomorrow, it must not be a disaster for me"
+    fears:
+      - "Price increases at renewal"
+      - "Having to explain to the board a total SaaS cost that is out of control"
+    communication_style: detail_oriented
+    opinion_strength: 0.8
+    emotional_state: vigilant
+
+report_focus:
+  mandatory_sections:
+    - objections_analysis
+    - buyer_rationalizations
+    - resistance_by_segment
+    - pricing_levers
+    - debate_dynamics
+  extra_instructions: >
+    Clearly separate the favourable voices (generated from the knowledge
+    base) from the critical voices (adversarial personas). Avoid a
+    triumphant tone: if positive agreement emerges, check that it is not an
+    artefact of the agent population. Identify concrete negotiation levers
+    the sales team can use.

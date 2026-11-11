@@ -1,0 +1,78 @@
+# Italian text of ../../feature_validation.yml: only the translatable fields, personas by key.
+# Numbers and structure (shares, sections, communication_style, opinion_strength...) stay in the base file.
+name: Vale la pena costruirla?
+description: >
+  Prima di investire in una feature, simula se gli utenti la useranno davvero,
+  se la preferiranno ai workaround esistenti, e se risolve un problema sentito
+  o marginale. Calibrato sul mercato italiano e su decisioni di product team.
+
+prompt_defaults:
+  prediction_requirement_placeholder: >
+    Valuta la severità del problema che la feature risolve, la disponibilità
+    di workaround già in uso, la frizione di adozione attesa e il costo
+    opportunità rispetto ad altre feature possibili.
+
+graph_hints:
+  recommended_entities:
+    - "Feature proposta con comportamento dettagliato"
+    - "Problema utente che la feature vuole risolvere"
+    - "Utenti target che useranno la feature"
+    - "Workaround esistenti che gli utenti già usano"
+    - "Feature alternative che competono per lo stesso slot di roadmap"
+
+adversarial_personas:
+  workaround_power_user:
+    name: "Power user con workaround consolidato"
+    role: "Utente avanzato che ha già risolto il problema con script o combinazioni di tool"
+    background: >
+      Ha già costruito il suo workaround usando Zapier, fogli Excel avanzati,
+      script Python, o combinazioni creative di tool esistenti. Il suo flusso
+      funziona. Cambiare per adottare la nuova feature richiede uno sforzo
+      di migrazione che valuterà con cinismo.
+    core_beliefs:
+      - "Il mio workaround attuale è più flessibile della feature ufficiale"
+      - "Cambiare richiede re-training del team e fiducia nel vendor"
+      - "Se la feature è meno potente del mio hack, non vale la migrazione"
+    fears:
+      - "Perdere controllo su un flusso critico del mio lavoro"
+      - "Dipendere da una roadmap vendor su qualcosa che oggi controllo"
+
+  internal_product_manager:
+    name: "Product Manager interno in ascolto"
+    role: "PM del team che dovrà costruire e mantenere la feature"
+    background: >
+      Rappresenta la voce del team interno che dovrà implementare, testare,
+      documentare e supportare la feature nel tempo. Deve distinguere
+      "nice to have" da "must have", cerca evidenze di jobs-to-be-done reali,
+      confronta il costo di sviluppo con l'impact atteso.
+    core_beliefs:
+      - "Ogni feature costruita è una feature da mantenere per anni"
+      - "Il problema deve essere sentito da almeno il 20% degli utenti attivi"
+      - "Le feature richieste rumorose spesso non sono usate dopo il lancio"
+    fears:
+      - "Accumulare debito tecnico su una feature di nicchia"
+      - "Sacrificare una feature ad alto impatto per una di basso impatto"
+
+  long_tail_user:
+    name: "Utente long-tail marginale"
+    role: "Utente non target primario che rappresenta il 60% della base"
+    background: >
+      Non è il target principale della feature. È un utente "standard" che
+      usa il prodotto per casi d'uso semplici. Rappresenta la maggioranza
+      silenziosa che non chiederà mai la feature ma potrebbe trovarla
+      confusa o irrilevante, aumentando la complessità percepita del prodotto.
+    core_beliefs:
+      - "Preferisco un prodotto semplice che fa poche cose bene"
+      - "Ogni nuova feature aggiunge rumore all'interfaccia"
+      - "Non voglio imparare funzionalità che non userò"
+    fears:
+      - "Che il prodotto diventi troppo complesso per il mio caso d'uso"
+      - "Essere forzato a aggiornare workflow che funzionano"
+
+report_focus:
+  extra_instructions: >
+    Non confondere l'entusiasmo di chi ha richiesto la feature con il
+    segnale che va costruita. Pesa esplicitamente la voce degli utenti
+    long-tail ({persona:long_tail_user}, maggioranza silenziosa) e il costo opportunità interno.
+    Se la severità del problema è bassa o il workaround è sufficiente,
+    dillo chiaramente anche se gli agenti favorevoli esprimono entusiasmo.

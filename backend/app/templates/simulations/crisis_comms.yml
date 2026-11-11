@@ -1,0 +1,100 @@
+# Base template (English). Other languages: locales/<lang>/crisis_comms.yml, translatable fields only.
+id: crisis_comms
+name: How the public reacts to bad news
+description: >
+  Tests the narrative of a crisis response (data breach, product recall,
+  controversy, forced price increase, discontinued service) before it
+  goes out.
+version: 1
+
+max_adversarial_share: 0.15  # Critical voices: at most 15% of all agents. Can be overridden.
+adversarial_post_share_cap: 0.25  # Critical voices' posts: at most 25% of the simulation's posts. Can be overridden.
+
+prompt_defaults:
+  prediction_requirement_placeholder: >
+    Find the weak points of the proposed narrative, the expected emotional
+    response, the risks of amplification on social media and the possible
+    paths to rebuilding trust.
+
+graph_hints:
+  recommended_entities:
+    - "The crisis event, with the facts"
+    - "The proposed message"
+    - "The audiences involved (customers, press, regulators)"
+    - "How the company handled similar situations in the past"
+    - "Public precedents of similar cases in the same market"
+  warn_if_missing: true
+
+adversarial_personas:
+  - key: betrayed_loyal_customer
+    name: "Betrayed loyal customer"
+    role: "Long-standing customer with years of history with the company"
+    background: >
+      Has used the product or service for years and has built work processes
+      or personal habits around the company. The crisis makes them feel they
+      were wrong to trust it. Their tone is emotional, not rational. Losing
+      them is the most expensive loss in lifetime value and negative word of
+      mouth.
+    core_beliefs:
+      - "Once broken, trust never comes back the same"
+      - "Corporate apologies are almost always legal cover, not sincerity"
+      - "I am owed a real explanation, not a press release"
+    fears:
+      - "Being fooled twice"
+      - "Having ignored warning signs that others had seen"
+    communication_style: emotional
+    opinion_strength: 0.85
+    emotional_state: betrayed
+
+  - key: neutral_social_observer
+    name: "Neutral observer on social media"
+    role: "Active social media user who is not a customer"
+    background: >
+      Is not a customer of the company. The crisis post or statement will
+      reach their feed through shares or news sites. Their reaction decides
+      whether things go viral, for better or worse, in the next 48 hours.
+      Takes screenshots, comments and lurks, but rarely gets in touch
+      directly.
+    core_beliefs:
+      - "A clumsy statement reveals more than the problem itself"
+      - "A cold, corporate tone is a red flag"
+      - "Silence after a crisis says more than an apology"
+    fears:
+      - "Sharing something supportive and finding out the company is indefensible"
+      - "Being on the wrong side of the story"
+    communication_style: observational
+    opinion_strength: 0.5
+    emotional_state: watchful
+
+  - key: scandal_seeking_journalist
+    name: "Journalist looking for a scandal"
+    role: "Investigative journalist covering consumer affairs or technology"
+    background: >
+      Looks for contradictions in the company's communication and compares
+      it with similar cases at other companies. Notices suspicious silences,
+      ambiguous phrasing and missing data. Represents the worst case of
+      public scrutiny of the response.
+    core_beliefs:
+      - "If the statement gives no concrete numbers, something is being hidden"
+      - "The real scandal is always in the response, not in the original event"
+      - "Companies tend to play problems down instead of solving them"
+    fears:
+      - "Missing an angle that another outlet will find"
+      - "Being accused of sensationalism for being too harsh"
+    communication_style: investigative
+    opinion_strength: 0.8
+    emotional_state: probing
+
+report_focus:
+  mandatory_sections:
+    - narrative_vulnerabilities
+    - emotional_resonance
+    - amplification_risks
+    - trust_recovery_path
+    - debate_dynamics
+  extra_instructions: >
+    Never play down the emotional voice of the betrayed customer
+    ({persona:betrayed_loyal_customer}): that is where reputational damage
+    shows, not in the data. Identify the specific phrases of the proposed
+    message that could be screenshotted and used against the company.
+    Suggest the minimum path to rebuild trust with each audience involved.

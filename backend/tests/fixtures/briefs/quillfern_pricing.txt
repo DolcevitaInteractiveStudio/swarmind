@@ -1,0 +1,28 @@
+FICTIONAL TEST BRIEF. Quillfern Tea Co. is an invented company; any resemblance to a real
+company, product or person is coincidental.
+
+COMPANY: Quillfern Tea Co.
+PRODUCT: Quillfern Monthly, a loose-leaf tea subscription box
+MARKET: home tea drinkers in mid-sized European cities
+
+CURRENT OFFER
+- One box a month with four 50 g pouches of loose-leaf tea and a printed tasting card.
+- Price: EUR 9.90 a month, shipping included, cancel any time from the account page.
+- About 6,000 active subscribers; average subscription length 11 months.
+
+CHANGE BEING TESTED
+- New price: EUR 12.90 a month from the next billing cycle, for new and existing subscribers.
+- What changes with the new price: compostable pouches instead of foil, a fifth pouch every
+  three months, and free replacement of any tea the subscriber did not like.
+- Announcement: an email to subscribers 30 days before the first charge at the new price,
+  with a one-click option to pause or cancel.
+
+KNOWN FACTS
+- Costs of tea and shipping rose in the last year; the company has not raised prices since launch.
+- Two competitors sell similar boxes at EUR 11 and EUR 14 a month.
+- Customer support answers within one working day by email; there is no phone line.
+
+OPEN QUESTIONS FOR THE STRESS TEST
+- Will long-time subscribers accept the increase if the extras are explained first?
+- Which objections will price-sensitive subscribers raise, and in which words?
+- Does "compostable" read as a real improvement or as an excuse for the increase?

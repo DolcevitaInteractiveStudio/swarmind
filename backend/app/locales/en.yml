@@ -1,0 +1,662 @@
+# SwarMind locale catalog: English (default language).
+# Text shown to the reader verbatim. Prompts stay in English in the code and end with
+# core.i18n.language_directive(lang). Keys must match it.yml (verified by a script).
+# Placeholders use str.format: {name}.
+
+defaults:
+  simulation_name: "Simulation {id}"
+
+feed:
+  breaking_author: "Breaking News"
+  breaking_prefix: "[BREAKING]"
+
+subject_card:
+  subject: "Subject"
+  market: "Market"
+  change: "Change tested"
+  homonyms: "Not to be confused with"
+
+agent:
+  fallback_initial_opinion: "I am skeptical about: {topic}"
+  fallback_critic_name: "Critical voice"
+  fallback_critic_role: "Critic"
+  no_opinion_yet: "I have no strong opinion yet."
+  fallback_belief_pragmatism: "Pragmatism"
+  fallback_belief_self_interest: "Self-interest"
+  fallback_motivation: "Stability"
+  fallback_fear: "Uncertainty"
+  unknown_background: "Unknown background."
+
+# Used when the Demographer proposes no valid critical voice. Valid for any subject: no sector vocabulary.
+critical_voices:
+  fallback:
+    - name: "Disappointed long-time supporter"
+      role: "Someone who has followed the subject for many years"
+      background: >-
+        Has known the subject for a long time and is attached to it. Has already seen
+        announced changes bring little to those who were there before.
+      core_beliefs:
+        - "A change must give something to those already here, not only to those being courted"
+        - "Results matter, announcements do not"
+      fears:
+        - "Losing what made the subject recognizable"
+      motivations:
+        - "Defending what they have valued for years"
+    - name: "Skeptical independent observer"
+      role: "Independent commentator on the sector"
+      background: >-
+        Follows the sector with no ties to the subject. Compares promises with results
+        and with what happened to others in similar situations.
+      core_beliefs:
+        - "This move should be judged on results, not on stated intentions"
+        - "Many similar changes promised more than they delivered"
+      fears:
+        - "A good story hiding a lack of substance"
+      motivations:
+        - "Giving the public an independent judgement"
+    - name: "Supporter of an alternative"
+      role: "Someone who chose an alternative to the subject"
+      background: >-
+        Considered the subject and preferred an alternative. Does not yet see a concrete
+        reason to change their mind.
+      core_beliefs:
+        - "I do not see what this move offers that the alternatives do not already offer"
+        - "A new image is not enough to earn trust"
+      fears:
+        - "Being won over by promises that are not kept"
+      motivations:
+        - "Making the best choice without being led by announcements"
+
+report:
+  headings:
+    # Positioning: a stress test of the message before launch, not a market forecast. Reports saved with the
+    # old titles ("Prediction Report", "Prediction") are still recognised (postprocess, report_agent).
+    title: "Narrative Stress-Test Report"
+    executive_summary: "Executive Summary"
+    simulation_metrics: "Simulation Metrics"
+    opinion_landscape: "Opinion Landscape"
+    emerging_narratives: "Emerging Narratives"
+    agent_perspectives: "Agent Perspectives"
+    scenario_analysis: "Scenario Analysis"
+    prediction: "Most plausible reaction"
+    confidence_assessment: "Confidence Assessment"
+    appendix: "Methodological Appendix"
+    population_composition: "Population Composition"
+  metrics_table:
+    metric: "Metric"
+    value: "Value"
+  likelihood:
+    most: "most plausible"
+    plausible: "plausible"
+    less: "less plausible"
+    # Closing note of the scenarios when no scenario may be the most plausible (postprocess.enforce_scenario_likelihood)
+    no_most_note: "No scenario is the most plausible: the evidence from this simulation does not separate them."
+  entropy:
+    # Readings of the conviction entropy: they only talk about how strongly the agents are convinced
+    low: "concentrated conviction"
+    low_meaning: "almost all agents have a similar conviction intensity"
+    mid: "moderately spread conviction"
+    mid_meaning: "conviction intensity is spread over several levels"
+    high: "widely spread conviction"
+    high_meaning: "conviction intensity is spread over all levels"
+  conviction_buckets:
+    very_low: "conviction_very_low"
+    low: "conviction_low"
+    medium: "conviction_medium"
+    high: "conviction_high"
+    very_high: "conviction_very_high"
+  tone_not_stated: "not stated"
+  # Reader labels of the metrics and fields the report model receives. Raw field names
+  # (mean_opinion_strength, opinion_entropy...) only in the methodology appendix.
+  labels:
+    rounds: "Rounds"
+    agents: "Agents"
+    total_posts: "Total posts"
+    # "Consensus" is only the agreement on the stance toward the change; the variance of conviction is
+    # conviction uniformity
+    consensus_level: "Stance consensus"
+    conviction_uniformity: "Conviction uniformity"
+    mean_conviction: "Mean conviction"
+    conviction: "conviction"
+    variance: "Conviction variance"
+    stance: "Stance on the change"
+    stance_natural: "Stance on the change (natural agents)"
+    stance_adversarial: "Stance on the change (critical voices)"
+    stance_shift: "Stance shift (first → last measurement)"
+    opinion_entropy: "Conviction entropy (last round)"
+    emotional_state: "emotional state"
+    posts: "posts"
+  # Words that replace raw field names written by the model outside the methodology appendix
+  field_words:
+    mean_opinion_strength: "mean conviction"
+    opinion_strength: "conviction"
+    opinion_entropy: "conviction entropy"
+    consensus_level: "stance consensus"
+    conviction_uniformity: "conviction uniformity"
+    emotional_state: "emotional state"
+    posts_made: "posts"
+    polarization_delta: "conviction polarization"
+    echo_chamber_index: "echo chamber"
+    information_diversity: "information diversity"
+    is_adversarial: "critical voice"
+  # Stance consensus (agreement on the stance)
+  consensus_levels:
+    high: "high"
+    medium: "medium"
+    low: "low"
+  # Conviction uniformity (from the variance): not consensus
+  conviction_uniformity_levels:
+    high: "high"
+    medium: "medium"
+    low: "low"
+  # Stance of the agents on the change (English enum values in the data)
+  stance_values:
+    support: "support"
+    neutral: "neutral"
+    oppose: "oppose"
+  stance:
+    share: "{label} {count} ({pct})"
+    agents_not_measured: "agents not measured: {count}"
+    unparsed: "unparsed replies, counted as neutral: {count}"
+    not_measured: "not measured (simulation created before the stance measure)"
+    consensus: "{level} ({pct} {stance})"
+    consensus_tie: "{level} (no majority: {stances} tied at {pct} each)"
+    shift: "{changed} of {remeasured} re-measured agents changed stance ({toward_support} more supportive, {toward_oppose} more opposed): {reading}{cap_note}"
+    shift_cap_note: " (fewer than {min} re-measured agents: at most moderate)"
+    shift_with_count: "{reading} ({changed} of {remeasured} re-measured agents)"
+    # Stance of a segment with fewer than 3 agents: counts, never percentages
+    count_share: "{count} of {total} {label}"
+    shift_none: "no agent measured twice: shift not measurable"
+    shift_unmeasurable: "shift not measurable"
+    shift_readings:
+      stable: "stable positions"
+      moderate: "moderate shift"
+      large: "large shift"
+    groups:
+      natural: "natural agents"
+      adversarial: "critical voices"
+  # Agent counts in the scenarios and the prediction, replaced by a quantifier
+  # (postprocess.remove_population_shares)
+  population:
+    noun: "agents"
+    noun_natural: "natural agents"
+    quantifiers:
+      none: "none of the {noun}"
+      few: "a few {noun}"
+      minority: "a minority of the {noun}"
+      plurality: "a plurality of the {noun}"
+      half: "half of the {noun}"
+      majority: "most {noun}"
+      almost_all: "almost all {noun}"
+      all: "all {noun}"
+  # Agent claims cited in the scenarios and the prediction (postprocess.mark_unverified_claims)
+  claims:
+    # The whole sentence starts with the attribution, never the middle of it
+    attributed: "According to {agent}, {sentence} (the agent's claim, not verified in the brief: not evidence){end}"
+  # Parameter lines of the appendix, written by the system from the saved simulation (postprocess.appendix_parameters)
+  parameters:
+    heading: "**Simulation parameters:**"
+    template: "Template"
+    agents: "Total number of agents"
+    rounds: "Number of rounds"
+    topic: "Topic analysed"
+    question: "Question to test"
+    not_specified: "not specified"
+  # Share of the published posts written by the top 3 influencers, computed by the system (appendix)
+  top3:
+    share: "The top 3 account for {top_pct} of the posts published ({top_posts} of {total_posts}); the remaining {rest_pct} comes from the agents not quoted."
+    unknown: "The share of posts written by the top 3 is not available for this simulation."
+  # Rewording of "consensus" in the model's text (postprocess.fix_consensus_wording)
+  consensus_rewording:
+    conviction_noun: "conviction uniformity"
+    level_before: "{level} {noun}"
+    stance_level_before: "{level} {noun}"
+    # Italian articles before the replaced word (an Italian word in an English report keeps its article)
+    articles:
+      il: "il "
+      lo: "lo "
+      un: "un "
+      del: "del "
+      al: "al "
+      sul: "sul "
+      nel: "nel "
+      dal: "dal "
+    unmeasured_noun: "prevailing positions"
+    unmeasured_articles:
+      il: "il "
+      lo: "lo "
+      un: "un "
+      del: "del "
+      al: "al "
+      sul: "sul "
+      nel: "nel "
+      dal: "dal "
+  # Emotional states of the personas (English enum values in the data): label shown to the reader
+  emotional_states:
+    neutral: "neutral"
+    anxious: "anxious"
+    optimistic: "optimistic"
+    angry: "angry"
+    curious: "curious"
+    skeptical: "skeptical"
+    sceptical: "skeptical"
+    enthusiastic: "enthusiastic"
+    frustrated: "frustrated"
+    betrayed: "betrayed"
+    probing: "probing"
+    weary: "weary"
+    challenged: "challenged"
+    critical_neutral: "critical but neutral"
+    cautious: "cautious"
+    concerned: "concerned"
+    worried: "worried"
+    hopeful: "hopeful"
+    excited: "excited"
+    confused: "confused"
+    indifferent: "indifferent"
+    disappointed: "disappointed"
+    critical: "critical"
+    supportive: "supportive"
+    pessimistic: "pessimistic"
+    nostalgic: "nostalgic"
+    defensive: "defensive"
+    irritated: "irritated"
+    annoyed: "annoyed"
+    interested: "interested"
+    doubtful: "doubtful"
+    uncertain: "uncertain"
+    resigned: "resigned"
+    determined: "determined"
+    calm: "calm"
+    positive: "positive"
+    negative: "negative"
+    ambivalent: "ambivalent"
+    intrigued: "intrigued"
+    alarmed: "alarmed"
+    distrustful: "distrustful"
+    suspicious: "suspicious"
+    passionate: "passionate"
+    proud: "proud"
+    nervous: "nervous"
+    fearful: "fearful"
+    satisfied: "satisfied"
+    dissatisfied: "dissatisfied"
+    pragmatic: "pragmatic"
+    analytical: "analytical"
+  template_none: "none"
+  adversarial_note_heading: "**Nature of the adversarial agents:**"
+  archetypes:
+    population_demographer: "The population composition is proposed by the Demographer (an LLM) from the brief"
+    population_kb: "The natural agents derive from the entities extracted from the knowledge base"
+    with_template: >-
+      - {population}, and the critical voice archetypes (journalist, competitor, early adopter, etc.)
+      are defined by the template: neither is validated against real demographic distributions.
+    without_template: >-
+      - {population}, and the critical voices come from the brief or from the user (no template
+      used): neither source is validated against real demographic distributions.
+    # A line containing this text describes template archetypes: replaced when there is no template
+    template_needle: "defined by the template"
+  # The limits line containing this text is removed when the report has no recommendations section
+  recommendations_needle: "operational recommendations"
+  appendix: |-
+    ---
+
+    **Simulation parameters:**
+    {parameters}
+
+    **Selection criteria for the agents quoted:**
+    The top 3 influencers are selected by number of posts published. The other agents contribute to the metrics (stance, conviction, entropy) but are not quoted individually in the report. {top3_sentence}
+
+    **Nature of the adversarial agents:**
+    If the simulation includes agents marked is_adversarial=true, they were deliberately added to stress-test the prevailing positions. They do not represent a natural market distribution: their presence artificially amplifies criticism to surface vulnerabilities.
+
+    **Confidence score — nature of the metric:**
+    The confidence level is computed by the system, not by the model: it starts from the stability of the agents' stance on the change (consensus and shift between the first and the last measurement; for simulations without the stance measure, from the variance and opinion_entropy of conviction) and is capped by the sample size ({confidence_rule}). This is why scenarios only have a qualitative plausibility, with no percentages. It is NOT calibrated retroactively against real outcomes (no Brier score, no historical track record). Read it as an internal indicator of the stability of the simulated positions, not as a verified probability of predictive accuracy.
+
+    **Known limits of the method:**
+    - The simulation measures pre-launch opinions expressed by LLM agents, not real market behaviour.
+    {archetypes_limitation}
+    - The positions found may partly be an artefact of the initial simulation prompt: enthusiastic or pessimistic prompts can steer the dynamics. A/B tests with varied prompts are not included in this run.
+    - The operational recommendations are consistent with the product stage stated in the topic but have not been validated with real effectiveness tests.
+  share:
+    not_recorded: "Adversarial post share: not recorded for this simulation."
+    none: "Adversarial post share: 0% (no adversarial agents in this simulation)."
+    full: >-
+      Adversarial post share: {share} ({adversarial_posts} of {posts} posts in the whole simulation),
+      from {adversarial_agents} adversarial agents out of {total_agents}; configured cap: {cap}.
+      The share depends on how often the system lets these agents speak: it does not measure how
+      widespread the criticism is in the market.
+  relabel:
+    natural_many: "critical voices (adversarial agents)"
+    natural_one: "a critical voice (adversarial agent)"
+    # Inside parentheses (no nested parentheses) and before a name
+    natural_many_flat: "critical voices, adversarial agents"
+    paren: "critical voice, adversarial agent"
+    before_name_article: "the critical voice"
+    before_name: "critical voice"
+    # Article of the plural label, replacing gli/i/the before "agenti naturali"
+    many_article: "the"
+  sections:
+    objections_analysis: "Main Objections"
+    buyer_rationalizations: "Buyer Rationalizations"
+    resistance_by_segment: "Resistance by Segment"
+    pricing_levers: "Negotiation Levers"
+    messaging_gaps: "Launch Messaging Gaps"
+    positioning_risks: "Positioning Risks"
+    early_adoption_signals: "Early Adoption Signals"
+    competitive_response_prediction: "Expected Competitive Response"
+    problem_severity: "Problem Severity"
+    workaround_analysis: "Analysis of Existing Workarounds"
+    adoption_friction: "Adoption Friction"
+    opportunity_cost: "Opportunity Cost"
+    narrative_vulnerabilities: "Narrative Vulnerabilities"
+    emotional_resonance: "Emotional Resonance"
+    amplification_risks: "Amplification Risks"
+    trust_recovery_path: "Trust Recovery Path"
+    heritage_coherence: "Coherence with the Brand Heritage"
+    generational_bridge: "Generational Bridge: Old Audience vs New Target"
+    debate_dynamics: "Debate Dynamics"
+
+debate:
+  title: "Debate Dynamics"
+  block_head: "**Debate metrics** (computed by the system, no LLM):"
+  unavailable: "Metrics not available for this simulation."
+  table_header: "| Metric | Value | Interpretation |"
+  not_available: "n/a"
+  rows:
+    polarization: "Conviction polarization"
+    echo: "Echo chamber"
+    diversity: "Information diversity"
+  values:
+    polarization: "from {initial} to {final} (delta {delta})"
+    echo: "{score} (mean similarity between the posts of a round, {method})"
+    diversity: "from {first} to {second} unique keywords per round ({delta}%)"
+  methods:
+    embedding: "embedding"
+    jaccard: "word overlap, Jaccard"
+  labels:
+    polarization_active: "More polarized conviction"
+    depolarization: "Less polarized conviction"
+    stable: "Stable conviction"
+    echo_chamber_strong: "Strong echo chamber"
+    partial_debate: "Partial debate"
+    parallel_silos: "Parallel silos"
+    rapid_collapse: "Rapid narrative flattening"
+    gradual_convergence: "Gradual convergence"
+    diversity_growth: "Narrative expansion"
+    stable_diversity: "Stable diversity"
+    insufficient_data: "Insufficient data"
+
+# Interpretations of metrics.py: "Label (figures): meaning". The part before "): " is stripped in the report table.
+metrics:
+  polarization_delta:
+    insufficient_data: "Insufficient data to compute conviction polarization over time (at least 2 rounds needed)."
+    # Conviction polarization (opinion_strength): it only talks about how strongly the agents are convinced
+    polarization_active: "More polarized conviction (delta +{delta}): during the conversation conviction intensity drew apart, between strongly convinced and weakly convinced agents."
+    depolarization: "Less polarized conviction (delta {delta}): during the conversation conviction intensity drew closer: the agents became more similar in how convinced they are."
+    stable: "Stable conviction (delta {delta}): during the conversation the distribution of conviction intensity did not change significantly."
+  echo_chamber_index:
+    insufficient_data: "Insufficient data to compute the echo chamber index (at least 3 rounds with 2+ posts needed)."
+    failed: "The similarity between posts could not be computed."
+    echo_chamber_strong: "Strong echo chamber (mean similarity {score}): agents converge on a shared vocabulary, amplifying the same ideas instead of challenging them. The topic produces echo, not debate."
+    partial_debate: "Partial debate (mean similarity {score}): different positions coexist, with their vocabularies influencing each other. The factions listen to each other."
+    parallel_silos: "Parallel silos (mean similarity {score}): agents talk about topics too different from each other. The topic did not bring the debate onto common ground."
+  information_diversity:
+    insufficient_data: "Insufficient data to compute information diversity (at least 3 rounds needed)."
+    insufficient_trend: "Insufficient data for the diversity trend."
+    rapid_collapse: "Rapid narrative flattening ({delta_pct}% unique keywords between the first and second half of the simulation): the conversation quickly converges on a few dominant themes, leaving nuance out. A sign of narrative saturation."
+    gradual_convergence: "Gradual convergence ({delta_pct}% unique keywords): the debate gradually focuses on 2-3 central themes, leaving the noise out. A healthy consolidation."
+    diversity_growth: "Narrative expansion ({delta_pct}% more unique keywords): the conversation opens up to new arguments over time. The topic generates unexpected depth."
+    stable_diversity: "Stable diversity ({delta_pct}% change): the conversation keeps a constant variety of arguments, neither flattening nor expanding significantly."
+
+confidence:
+  levels:
+    bassa: "Low"
+    media: "Medium"
+    alta: "High"
+  indicative_suffix: " (indicative)"
+  rule: >-
+    with fewer than {small_agents} agents, {small_rounds} rounds or {small_posts} posts it is at most
+    "low (indicative)"; with fewer than {medium_agents} agents, {medium_rounds} rounds or
+    {medium_posts} posts at most "medium"
+  sample_counts: "{agents} agents, {rounds} rounds, {posts} posts"
+  nouns:
+    agents: "agents"
+    rounds: "rounds"
+    posts: "posts"
+  fewer_than: "fewer than {count} {noun}"
+  sample_small: "small sample ({why}): at most \"{cap}\""
+  sample_medium: "medium sample ({why}): at most \"{cap}\""
+  # Stability from the stance (consensus and shift); without the stance measure, from conviction
+  stability_stance: "stance ({group}): consensus {consensus}, {shift}: stability \"{stability}\""
+  stability: "stance not measured, stability from conviction (variance {variance}, conviction entropy, last round, {entropy}): \"{stability}\""
+  line: "**Confidence level: {label}** — computed by the system: {basis}."
+
+pdf:
+  title: "{name} — Narrative Stress-Test Report"
+  confidence: "Confidence: {value}"
+  not_available: "N/A"
+  footer: "Generated by {name}  |  Simulation ID: {sim_id}"
+  report_unavailable: "# Report not available"
+
+credentials:
+  verified: "Connection verified"
+  empty_reply: "Empty reply from the provider"
+  unknown_provider: "Unknown provider: {provider}"
+
+errors:
+  # auth
+  token_missing: "Missing token"
+  token_expired: "Token expired"
+  token_invalid: "Invalid token"
+  user_not_found_or_disabled: "User not found or disabled"
+  access_denied: "Access denied"
+  no_active_plan: "No active plan"
+  feature_not_in_plan: "Feature not available in your plan"
+  provider_not_in_plan: "Provider {provider} is not available in your plan"
+  registration_disabled: "Public registration is disabled. Contact the administrator to get access."
+  invalid_credentials: "Invalid credentials"
+  account_disabled: "Account disabled"
+  wrong_current_password: "Current password is not correct"
+  new_password_min_length: "The new password must be at least 8 characters"
+  # admin
+  superadmin_only_roles: "Only the superadmin can change roles"
+  invalid_role: "Invalid role: {role}"
+  plan_not_found: "Plan not found"
+  cannot_suspend_superadmin: "A superadmin cannot be suspended"
+  cannot_modify_superadmin: "Only a superadmin can modify a superadmin account"
+  required_field: "Required field: {field}"
+  email_password_required: "Email and password are required"
+  password_min_length: "The password must be at least 8 characters"
+  email_taken: "Email already registered"
+  superadmin_only_create_admin: "Only the superadmin can create admins"
+  cannot_delete_self: "You cannot delete yourself"
+  cannot_delete_superadmin: "A superadmin cannot be deleted"
+  # credentials
+  unsupported_provider: "Unsupported provider: {provider}"
+  api_key_required: "api_key is required"
+  credential_exists: "A credential with this provider/label already exists"
+  plan_excludes_provider: "Your plan does not include the provider {provider}"
+  # graph / projects
+  project_limit: "Project limit reached ({max}). Upgrade your plan."
+  no_file: "No file uploaded"
+  unsupported_format: "Unsupported format. Use: {formats}"
+  file_too_large: "File too large ({size} MB). Limit: {max} MB"
+  invalid_credential: "LLM credential not valid or not active"
+  provider_mismatch: "The provider does not match the selected credential"
+  graph_building: "The graph is already being built."
+  simulations_running: "There are simulations running on this project: try again when they have finished."
+  source_missing: "The project's source file is no longer available: upload it in a new project."
+  rebuild_unavailable: "The rebuild cannot start now: try again shortly."
+  # simulations
+  quota_exhausted: "Simulation quota exhausted for this month."
+  project_id_required: "project_id is required"
+  graph_not_built: "The graph has not been built yet for this project"
+  no_api_key: "No API key configured for {provider}. Go to the AI settings."
+  no_llm_provider: "No LLM provider is configured. Connect an API key in AI connections first."
+  template_not_found: "Template '{id}' does not exist"
+  custom_adversaries_list: "custom_adversaries must be a list"
+  unsupported_language: "Unsupported language: {language}. Use one of: {allowed}"
+  already_in_state: "Simulation already in state: {status}"
+  graph_not_ready: "The project's graph is not ready (it may be rebuilding): try again when it is ready."
+  already_finished: "The simulation has already ended."
+  # reports
+  report_not_ready: "Report not available yet"
+  report_not_available: "Report not available"
+  empty_message: "Empty message"
+  simulation_data_not_found: "Simulation data not found"
+  agent_not_found: "Agent not found"
+  pdf_failed: "PDF generation failed: {error}"
+  # site settings and uploads (api/site.py)
+  site_invalid: "Some fields are not valid. Check the highlighted fields."
+  site_conflict: "Someone else saved the site settings in the meantime. Reload to see their changes."
+  site_asset_not_found: "Image not found"
+  site_upload_empty: "No file received"
+  site_upload_invalid_kind: "Unknown image type"
+  site_upload_too_large: "The file is too large (maximum {max_mb} MB)"
+  site_upload_svg_not_allowed: "SVG files are not accepted. Upload a PNG, JPEG or WebP image."
+  site_upload_unsupported_type: "Unsupported file. Upload a PNG, JPEG or WebP image."
+  site_upload_dimensions_too_large: "The image is too large: at most {max_w}×{max_h} pixels"
+  site_upload_dimensions_too_small: "The image is too small: at least {min_w}×{min_h} pixels"
+
+# Failure and stop messages of simulations and graphs (simulation/lifecycle.py). Stored as a code
+# with parameters (simulations.error_detail, projects.graph_error_detail) and rendered when read,
+# in the language of the request.
+lifecycle:
+  phase_failed:
+    graph: "Graph construction failed: {reason}"
+    spawn: "Agent generation failed: {reason}"
+    rounds: "Simulation interrupted during the rounds: {reason}"
+    report: "Report generation failed: {reason}"
+    other: "Processing failed: {reason}"
+  rebuild_failed: "Graph rebuild failed: {reason} (the previous graph stays in use)"
+  stale_simulation: >-
+    The simulation stopped without a result: the worker was restarted or the task was lost.
+    You can create a new one.
+  redelivered: >-
+    Simulation interrupted by a worker restart during the rounds: it is not resumed, because it
+    would start over. You can create a new one.
+  stopped_by_user: "Simulation stopped by the user."
+  stale_graph: >-
+    Graph construction stopped without a result: the worker was restarted or the task was lost.
+    Use "Rebuild graph" to retry from the uploaded file.
+  llm_error: "{hint} (HTTP {status})"
+  llm_error_detail: "{hint} (HTTP {status}): {detail}"
+  llm_hint:
+    "400": "the LLM provider rejected the request"
+    "401": "invalid API key"
+    "402": "LLM provider credit exhausted"
+    "403": "the API key has no access to this model"
+    "404": "LLM model not found"
+    "408": "the LLM provider did not respond in time"
+    "409": "temporary conflict at the LLM provider"
+    "422": "the LLM provider rejected the request parameters"
+    "429": "LLM provider rate limit exceeded"
+    server_error: "LLM provider error"
+    rejected: "request rejected by the LLM provider"
+  reason:
+    worker_lost: "the worker process was terminated (out of memory or restart)"
+    no_agents: "no agents generated: the model's responses could not be used"
+    no_valid_replies: "no agent produced a valid reply ({failed} failed calls). Check the model and the credential."
+    no_brief: "the project has no brief text, which the Demographer needs as input"
+    empty_document: "the source document has no text"
+
+# Default landing page content (core/site_settings.py), used until an admin saves their own.
+# Positioning: a stress test of a narrative before launch, never a market forecast.
+landing:
+  default:
+    hero:
+      title: "Stress-test your narrative before the market does"
+      subtitle: >-
+        SwarMind simulates how a population of AI agents with different backgrounds reacts to a
+        rebrand, a new price, a launch or a crisis statement. You see the objections, the
+        arguments that spread and the voices that push back, so your client is prepared before
+        launch. It does not predict the market: it shows what a message is likely to run into.
+      primary_cta:
+        label: "Request a demo"
+        target: "#contact"
+      secondary_cta:
+        label: "How it works"
+        target: "#how"
+    sections:
+      value:
+        title: "What it is for"
+        intro: "A rehearsal for messages that cannot afford to fail on day one."
+        items:
+          - title: "Find objections early"
+            text: "See the doubts, comparisons and misreadings a message triggers before it reaches real customers."
+          - title: "Compare versions"
+            text: "Run the same population against two names, two prices or two statements and compare the debates."
+          - title: "Arrive prepared"
+            text: "Bring your client answers to the objections they will meet, with the debate that produced them."
+          - title: "Clear about its limits"
+            text: "Agents are simulations, not respondents. Results are hypotheses to check with real people, not a forecast."
+      how:
+        title: "How it works"
+        intro: "From a brief to a report in four steps."
+        items:
+          - title: "Upload the brief"
+            text: "Documents about the brand, the product and the market become the knowledge the agents draw on."
+          - title: "Generate the population"
+            text: "SwarMind builds personas with different backgrounds, priorities and stances, including a limited share of deliberately critical voices."
+          - title: "Run the debate"
+            text: "Over several rounds the agents post, reply and change their minds. The feed ranks what gains traction."
+          - title: "Read the report"
+            text: "The report sums up the objections, the arguments that held and how the debate moved, with polarisation and echo-chamber measures."
+      use_cases:
+        title: "Use cases"
+        intro: "Templates for the moments when a narrative is most exposed."
+        items:
+          - title: "Rebranding"
+            text: "Will long-time customers follow a new name or identity? Where does the bridge between generations break?"
+          - title: "Pricing"
+            text: "How do buyers react to a new price or plan, and which objections come from procurement and finance?"
+          - title: "Product launch"
+            text: "Which claims are believed, which are doubted, and what do people compare the product with?"
+          - title: "Crisis communication"
+            text: "Which version of a statement contains the damage, and which one feeds it?"
+          - title: "Feature validation"
+            text: "Does a new feature justify a price, or is it seen as noise?"
+      deliverables:
+        title: "What you get"
+        intro: "Material you can take into a client meeting."
+        items:
+          - title: "A structured report"
+            text: "Main objections, supporting arguments, the most exposed groups and recommendations, in English or Italian."
+          - title: "The whole debate"
+            text: "Every post and reply, by round and by agent, so each finding can be traced back to where it came from."
+          - title: "Debate measures"
+            text: "Polarisation, echo-chamber index and diversity of information, computed from the simulation itself."
+          - title: "Conversations with agents"
+            text: "Ask an agent why it changed its mind, or what would convince it."
+          - title: "PDF export"
+            text: "A report you can share with the client team."
+      open_source:
+        title: "Open source"
+        intro: "SwarMind is also an open-source project: you can run it on your own server, with your own model keys."
+        github_url: "https://github.com/DolcevitaInteractiveStudio/swarmind"
+        docs_url: ""
+        license_name: "AGPL-3.0"
+        install_snippet: |-
+          git clone https://github.com/DolcevitaInteractiveStudio/swarmind.git swarmind
+          cd swarmind
+          cp .env.example .env   # then set ENCRYPTION_KEY: see the README
+          docker compose up -d
+      contact:
+        title: "Request a demo"
+        intro: "Tell us about the launch, rebrand or statement you need to test. We will show you a simulation on a comparable case."
+        cta_label: "Write to us"
+        # The address comes from CONTACT_EMAIL (.env): core/site_settings.default_content
+        email: ""
+        url: ""
+    footer:
+      # Empty: the footer shows the product name
+      company_name: ""
+      contact_email: ""
+      privacy_url: ""
+      terms_url: ""
+    seo:
+      title: "SwarMind: stress-test your narrative before launch"
+      description: >-
+        Simulate how a population of AI agents reacts to a rebrand, a price or a crisis statement,
+        and prepare for the objections before launch.

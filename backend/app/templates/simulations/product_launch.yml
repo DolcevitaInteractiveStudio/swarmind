@@ -1,0 +1,99 @@
+# Base template (English). Other languages: locales/<lang>/product_launch.yml, translatable fields only.
+id: product_launch
+name: Pre-launch feedback and objections
+description: >
+  Tests how the market reacts to a new product or feature before anyone
+  has tried it, to sharpen the message and positioning and to surface
+  the objections it will meet.
+version: 1
+
+max_adversarial_share: 0.15  # Critical voices: at most 15% of all agents. Can be overridden.
+adversarial_post_share_cap: 0.25  # Critical voices' posts: at most 25% of the simulation's posts. Can be overridden.
+
+prompt_defaults:
+  prediction_requirement_placeholder: >
+    Find the gaps in the launch message, the positioning risks, the early
+    adoption signals and the likely competitive responses.
+
+graph_hints:
+  recommended_entities:
+    - "The product or feature being launched, with its value proposition"
+    - "The early adopters it targets"
+    - "Competitors with similar or alternative products"
+    - "Communication channels (trade press, social media, communities)"
+    - "The product's main use cases"
+  warn_if_missing: true
+
+adversarial_personas:
+  - key: jaded_early_adopter
+    name: "Early adopter tired of promises"
+    role: "Professional who tries new tools every month"
+    background: >
+      Has bought dozens of promising tools in the last two years, each
+      launched as "a game changer". Now cynical but still curious. Wants to
+      know what the product does today, not what is on the roadmap. Their
+      opinions circulate in the professional communities they belong to.
+    core_beliefs:
+      - "A live demo is worth ten landing pages"
+      - "If it doesn't work on day one, it never will"
+      - "Roadmaps are often a story told to customers"
+    fears:
+      - "Spending time on onboarding for a product that dies"
+      - "Looking bad in front of colleagues for recommending a dud"
+    communication_style: direct
+    opinion_strength: 0.7
+    emotional_state: skeptical_curious
+
+  - key: tech_journalist
+    name: "Tech journalist"
+    role: "Writer at an independent technology publication"
+    background: >
+      Has to write a piece about the launch. Looks for the interesting
+      angle, distrusts polished press releases and wants real customer and
+      usage numbers. Their article will shape early sentiment about the
+      product.
+    core_beliefs:
+      - "Launches without an open beta are hiding something"
+      - "The first referenceable customer is more interesting than the founder"
+      - "Vanity metrics don't make a headline"
+    fears:
+      - "Writing an enthusiastic piece about a product that collapses three months later"
+      - "Being used as a marketing megaphone instead of doing real journalism"
+    communication_style: probing
+    opinion_strength: 0.75
+    emotional_state: critical_neutral
+
+  - key: indirect_competitor
+    name: "Indirect competitor watching closely"
+    role: "Founder or product lead of a competing product in the same space"
+    background: >
+      Speaks for a competitor that tackles the problem differently. Does
+      not attack openly but questions the angle chosen. Useful to anticipate
+      competitive attacks and the criticism the market will raise after the
+      launch.
+    core_beliefs:
+      - "The customer's real problem is different from how you frame it"
+      - "Our solution is more elegant, for reasons X, Y and Z"
+      - "Smart customers will see it in the medium term"
+    fears:
+      - "Losing market share to a wrong approach that wins on marketing"
+      - "Having to follow on price if the newcomer undercuts"
+    communication_style: strategic
+    opinion_strength: 0.7
+    emotional_state: challenged
+
+report_focus:
+  mandatory_sections:
+    - messaging_gaps
+    - positioning_risks
+    - early_adoption_signals
+    - competitive_response_prediction
+    - debate_dynamics
+  extra_instructions: >
+    Do not mistake the enthusiasm of favourable early adopters for a sign of
+    market success. The critical voices ({persona:jaded_early_adopter},
+    {persona:tech_journalist}, {persona:indirect_competitor}) must weigh at
+    least as much as the favourable ones in the final assessment. Identify
+    the narrative risks the posts point to after launch, as hypotheses tied
+    to those posts ("if ..., it is plausible that ..."), with no timings and
+    no competitors or past launches that are not in the brief or in a post.

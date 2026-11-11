@@ -1,0 +1,186 @@
+# SwarMind — Docker Compose for a single server.
+# Every port is bound to 127.0.0.1: put a reverse proxy with TLS in front of the frontend
+# (port 3000), see docs/manual/en/01-installation.md. Settings come from .env (copy .env.example).
+# Volumes are named volumes created by Compose (prefixed with the project name, i.e. the folder
+# name unless COMPOSE_PROJECT_NAME is set).
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: swarmind-postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_DB: swarmind
+      POSTGRES_USER: swarmind
+      # Used only when the volume is first initialised: to change it later see docs/manual (operations)
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U swarmind"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: swarmind-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  chroma:
+    image: chromadb/chroma:1.0.21
+    container_name: swarmind-chroma
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8001:8000"
+    volumes:
+      # Chroma 1.x stores its data in /data: see docs/runbooks/chroma-volume-migration.md
+      - chroma_data_v1:/data
+    environment:
+      - ANONYMIZED_TELEMETRY=False
+      - CHROMA_SERVER_AUTHN_CREDENTIALS=${CHROMA_TOKEN:?Set CHROMA_TOKEN in .env}
+      - CHROMA_SERVER_AUTHN_PROVIDER=chromadb.auth.token_authn.TokenAuthenticationServerProvider
+    # Many Docker daemons default to 1024 open files: too few for SQLite, segments and connections
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    # The image has no curl, wget or python: GET /api/v2/heartbeat with bash and /dev/tcp.
+    # A Chroma that accepts the connection but does not answer turns unhealthy (timeout 5 on head)
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8000 && printf 'GET /api/v2/heartbeat HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && timeout 5 head -n1 <&3 | grep -q ' 200 '"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: swarmind-backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5001:5001"
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://swarmind:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/swarmind
+      - REDIS_URL=redis://redis:6379/0
+      - CHROMA_HOST=chroma
+      - CHROMA_PORT=8000
+      - CHROMA_TOKEN=${CHROMA_TOKEN:?Set CHROMA_TOKEN in .env}
+      # No root-owned __pycache__ in the bind-mounted ./backend (it blocks git checkout on the host)
+      - PYTHONDONTWRITEBYTECODE=1
+    volumes:
+      # The code is also in the image: the bind mount lets a git pull + restart deploy a change
+      - ./backend:/app
+      - simulation_data:/app/data/simulations
+      - uploads:/app/data/uploads
+      - hf_cache:/root/.cache/huggingface
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chroma:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: swarmind-worker
+    restart: unless-stopped
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=4
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://swarmind:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/swarmind
+      - REDIS_URL=redis://redis:6379/0
+      - CHROMA_HOST=chroma
+      - CHROMA_PORT=8000
+      - CHROMA_TOKEN=${CHROMA_TOKEN:?Set CHROMA_TOKEN in .env}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      # No root-owned __pycache__ in the bind-mounted ./backend (it blocks git checkout on the host)
+      - PYTHONDONTWRITEBYTECODE=1
+    volumes:
+      - ./backend:/app
+      - simulation_data:/app/data/simulations
+      - uploads:/app/data/uploads
+      # Knowledge-base embedding model (multilingual-e5-small int8, ~135 MB), downloaded on first use
+      - hf_cache:/root/.cache/huggingface
+      # ONNX model the Chroma client downloads on the first embedding (only the worker embeds)
+      - chroma_onnx_cache:/root/.cache/chroma
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chroma:
+        condition: service_healthy
+
+  # Celery monitoring, optional: COMPOSE_PROFILES=monitoring in .env (or --profile monitoring).
+  # FLOWER_USER / FLOWER_PASSWORD come from .env; it refuses to start without a password.
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: swarmind-flower
+    restart: unless-stopped
+    profiles: ["monitoring"]
+    command:
+      - sh
+      - -c
+      - >-
+        test -n "$$FLOWER_PASSWORD" || { echo "Set FLOWER_PASSWORD in .env to run Flower" >&2; exit 1; };
+        exec celery -A app.celery_app flower --port=5555 --basic_auth="$${FLOWER_USER:-admin}:$$FLOWER_PASSWORD"
+    ports:
+      - "127.0.0.1:5555:5555"
+    env_file: .env
+    environment:
+      # Flower imports the Flask app (app.celery_app): same database as backend and worker
+      - DATABASE_URL=postgresql://swarmind:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/swarmind
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - worker
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: swarmind-frontend
+    restart: unless-stopped
+    # The SPA calls /api and /socket.io on its own origin; nginx in the image proxies them to backend
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  chroma_data_v1:
+  simulation_data:
+  uploads:
+  hf_cache:
+  chroma_onnx_cache:

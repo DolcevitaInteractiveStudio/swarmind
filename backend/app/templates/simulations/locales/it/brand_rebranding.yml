@@ -1,0 +1,125 @@
+# Italian text of ../../brand_rebranding.yml: only the translatable fields, personas by key.
+# Numbers and structure (shares, sections, communication_style, opinion_strength...) stay in the base file.
+name: Rebranding e ponte generazionale
+description: >
+  Simula la reazione del mercato a un'operazione di rebranding o
+  riposizionamento di un brand storico verso un nuovo target,
+  senza alienare il pubblico fedele. Calibrato per dominio brand
+  creativo e marketing culturale italiano.
+
+prompt_defaults:
+  prediction_requirement_placeholder: >
+    Identifica i rischi di alienazione del pubblico storico, la credibilità
+    dell'operazione presso il nuovo target, le vulnerabilità narrative
+    del posizionamento, e le risposte dei brand competitor sul terreno
+    emotivo/territoriale che gli agenti si aspettano.
+
+graph_hints:
+  recommended_entities:
+    - "Brand storico oggetto del rebranding (valori, heritage, target attuale)"
+    - "Pubblico storico fedele (segmenti specifici: età, geografia, motivazioni)"
+    - "Nuovo target che il rebranding vuole conquistare (e perché)"
+    - "Operazione concreta di rebranding (logo, naming, payoff, partnership, campagna)"
+    - "Brand competitor sullo stesso terreno emotivo o territoriale"
+    - "Personaggi pubblici, testimonial o partnership coinvolte"
+
+adversarial_personas:
+  heritage_keeper:
+    name: "Custode dell'heritage"
+    role: "Consumatore storico fedele al brand da decenni"
+    background: >
+      Ha un legame personale e generazionale con il brand. Lo associa a
+      momenti, luoghi, persone della propria vita. Vede ogni cambio
+      strutturale come un rischio di tradimento dell'identità che lo ha
+      conquistato. Non è contro l'evoluzione in assoluto, ma diffida di
+      ogni operazione che gli sembra inseguire mode passeggere a discapito
+      del DNA originario. La sua voce circola in community di nicchia,
+      forum tematici, gruppi social di appassionati.
+    core_beliefs:
+      - "I brand veri non si reinventano, si affinano"
+      - "Il pubblico fedele resta per decenni, quello nuovo è incostante"
+      - "Quando un brand insegue i giovani, perde se stesso senza guadagnarli"
+    fears:
+      - "Vedere il brand della propria gioventù trasformato in qualcosa di irriconoscibile"
+      - "Sentirsi dire che il proprio attaccamento è 'old' e va superato"
+
+  brand_critic:
+    name: "Critico di brand professionale"
+    role: "Brand strategist con voce pubblica (newsletter, podcast, articoli)"
+    background: >
+      Analizza operazioni di rebranding nel mercato italiano e
+      internazionale. Conosce la storia di chi ce l'ha fatta e di chi
+      ha fallito. Legge ogni operazione contro la motivazione strategica
+      che la muove. Non è cinico per partito preso ma esige sostanza:
+      diffida di rebranding cosmetici fatti per giustificare un budget
+      di marketing senza una vera tesi sul brand.
+    core_beliefs:
+      - "Ogni rebranding va letto contro l'operazione strategica che lo motiva"
+      - "I pubblici nuovi non si conquistano abbandonando i vecchi"
+      - "Un nuovo logo non risolve un problema di posizionamento sostanziale"
+    fears:
+      - "Stroncare ingiustamente un'operazione che funzionerà a lungo termine"
+      - "Mancare un'operazione strutturalmente importante perché travestita di superficie"
+
+  unconvinced_new_target:
+    name: "Voce del nuovo target che non si lascia sedurre"
+    role: "Giovane consumatore appartenente al target che il rebranding vuole conquistare"
+    background: >
+      Ha l'età, la cultura e i consumi del target ideale verso cui il
+      rebranding è rivolto. Ma è esattamente il tipo di persona che
+      riconosce immediatamente quando un brand storico cerca di
+      'travestirsi da giovane'. Non si fida delle operazioni che gli
+      sembrano calcolate per attirarlo. Sceglie i brand nati nel suo
+      mondo culturale, non quelli che ci si trasferiscono per scelta
+      strategica. È vocale sui social e influenza chi lo legge.
+    core_beliefs:
+      - "Il marketing che si sforza di sembrare giovane è cringe per definizione"
+      - "Scelgo brand nati nel mio mondo, non quelli che si travestono"
+      - "Una partnership con un nome cool non basta a riscrivere la storia di un brand"
+    fears:
+      - "Essere considerato 'il target ingenuo da catturare con un payoff cool'"
+      - "Diventare ambasciatore involontario di un brand che non rispecchia i miei valori"
+
+report_focus:
+  extra_instructions: >
+    DOMINIO: brand creativo, marketing culturale, comunicazione di brand.
+    NON è un dominio software o B2B SaaS.
+
+    Vincoli di vocabolario: NON usare termini tech come API, ROI, SaaS,
+    beta, demo, integrazione tecnica, asset management, lock-in, MRR,
+    onboarding, feature flag. Se il modello LLM tira fuori questi termini
+    è segno che sta applicando schemi del dominio sbagliato — riformula
+    nel vocabolario brand.
+
+    Metriche rilevanti per questo dominio:
+    - percezione e risonanza emotiva
+    - autenticità percepita dell'operazione
+    - differenziazione narrativa rispetto ai competitor
+    - credibilità generazionale (capacità di parlare al nuovo target
+      senza apparire forzati)
+    - coerenza con l'heritage del brand
+    - rischio di amplificazione negativa sui social
+
+    Concetti rilevanti:
+    - le 'feature' qui sono elementi di brand: logo, naming, payoff,
+      tono di voce, partnership, scelte cromatiche, testimonial
+    - i 'competitor' sono brand che competono sullo stesso terreno
+      emotivo, narrativo o territoriale, non necessariamente sullo
+      stesso prodotto merceologico; nominane uno solo se compare nel
+      brief o in un post, altrimenti descrivilo ("un brand sportivo con
+      una lunga storia")
+    - 'adozione' significa accettazione del rebranding da parte del
+      pubblico, non acquisto di un prodotto
+
+    Bilanciamento delle voci: il pubblico storico ({persona:heritage_keeper})
+    e il nuovo target ({persona:unconvinced_new_target}) devono pesare
+    insieme almeno quanto eventuali agenti favorevoli. Il rischio
+    centrale del rebranding generazionale è perdere entrambi: trattalo
+    come scenario plausibile, non come ipotesi pessimistica.
+
+    Identifica i rischi di amplificazione negativa a partire dai post:
+    cita le frasi del messaggio di rebranding che gli agenti hanno preso
+    in giro o che possono diventare meme o screenshot ironici, e presenta
+    ogni rischio come ipotesi legata a quei post ("se..., è plausibile
+    che..."), senza tempistiche e senza confronti con casi di altri brand
+    se il brief o un post non li fanno.

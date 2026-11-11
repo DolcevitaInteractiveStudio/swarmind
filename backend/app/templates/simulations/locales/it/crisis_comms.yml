@@ -1,0 +1,79 @@
+# Italian text of ../../crisis_comms.yml: only the translatable fields, personas by key.
+# Numbers and structure (shares, sections, communication_style, opinion_strength...) stay in the base file.
+name: Come reagisce il pubblico a una comunicazione negativa
+description: >
+  Testa la narrativa di risposta a una crisi (data breach, richiamo prodotto,
+  controversia, aumento di prezzo forzato, sostituzione di un servizio)
+  prima di pubblicarla. Calibrato sul contesto italiano.
+
+prompt_defaults:
+  prediction_requirement_placeholder: >
+    Identifica le vulnerabilità della narrativa proposta, la risonanza
+    emotiva attesa, i rischi di amplificazione sui social e i possibili
+    percorsi di recupero della fiducia.
+
+graph_hints:
+  recommended_entities:
+    - "Evento di crisi con dettagli fattuali"
+    - "Messaggio di comunicazione proposto"
+    - "Segmenti di pubblico coinvolti (clienti, stampa, autorità)"
+    - "Storia passata dell'azienda in situazioni simili"
+    - "Precedenti pubblici di casi analoghi in Italia"
+
+adversarial_personas:
+  betrayed_loyal_customer:
+    name: "Cliente fedele tradito"
+    role: "Cliente storico con anni di relazione con l'azienda"
+    background: >
+      Usa il prodotto o servizio da anni. Ha costruito processi aziendali
+      o abitudini personali attorno all'azienda. La crisi gli fa sentire
+      di aver sbagliato a fidarsi. Il tono è emotivo, non razionale.
+      Il suo abbandono è il più costoso in termini di lifetime value
+      e passaparola negativo.
+    core_beliefs:
+      - "La fiducia una volta rotta non torna mai come prima"
+      - "Le scuse aziendali sono quasi sempre caviglia legale, non sincerità"
+      - "Ho diritto a una spiegazione vera, non a un comunicato stampa"
+    fears:
+      - "Essere preso in giro due volte"
+      - "Aver ignorato segnali d'allarme che altri avevano visto"
+
+  neutral_social_observer:
+    name: "Osservatore neutrale sui social"
+    role: "Utente social italiano attivo ma non cliente"
+    background: >
+      Non è cliente dell'azienda. Il post di crisi o il comunicato finirà
+      nel suo feed attraverso condivisioni o testate online. La sua reazione
+      determina la viralità positiva o negativa nelle 48 ore successive.
+      Farà screenshot, commenti, lurking, ma raramente contatto diretto.
+    core_beliefs:
+      - "Una comunicazione goffa rivela più del problema stesso"
+      - "Il tono istituzionale freddo è un red flag"
+      - "Il silenzio dopo la crisi dice più delle scuse"
+    fears:
+      - "Condividere qualcosa di solidale e scoprire che l'azienda è indifendibile"
+      - "Essere dalla parte sbagliata della storia"
+
+  scandal_seeking_journalist:
+    name: "Giornalista in cerca dello scandalo"
+    role: "Giornalista italiano specializzato in inchieste consumer o tech"
+    background: >
+      Cerca contraddizioni nella comunicazione aziendale. Confronta con casi
+      simili di altre aziende italiane. Nota i silenzi sospetti, le frasi
+      ambigue, i dati mancanti. Rappresenta il peggior caso di scrutinio
+      pubblico sulla narrativa di risposta.
+    core_beliefs:
+      - "Se il comunicato non cita numeri concreti, c'è qualcosa da nascondere"
+      - "Il vero scandalo è sempre nella risposta, non nel fatto iniziale"
+      - "Le aziende italiane tendono a minimizzare, non a risolvere"
+    fears:
+      - "Mancare un angolo di indagine che un altro testata troverà"
+      - "Essere accusato di sensazionalismo se critica ed è troppo critica"
+
+report_focus:
+  extra_instructions: >
+    Non minimizzare mai la voce emotiva del cliente tradito ({persona:betrayed_loyal_customer}): il danno
+    reputazionale emerge lì, non nei dati. Identifica le frasi specifiche
+    della comunicazione proposta che possono essere screenshottate e
+    usate contro l'azienda. Suggerisci il percorso minimo per ristabilire
+    fiducia con ogni segmento coinvolto.

@@ -1,0 +1,75 @@
+# Italian text of ../../b2b_saas_pricing.yml: only the translatable fields, personas by key.
+# Numbers and structure (shares, sections, communication_style, opinion_strength...) stay in the base file.
+name: Test pricing B2B SaaS
+description: >
+  Valuta come reagiscono i potenziali clienti business a un prezzo
+  di abbonamento SaaS, facendo emergere obiezioni sostanziali e leve
+  di negoziazione. Calibrato sul mercato PMI italiano.
+
+prompt_defaults:
+  prediction_requirement_placeholder: >
+    Identifica le obiezioni principali al prezzo proposto, le razionalizzazioni
+    che gli acquirenti useranno per giustificare l'acquisto, e il livello
+    di resistenza atteso per segmento di cliente.
+
+graph_hints:
+  recommended_entities:
+    - "Prodotto SaaS con feature principali"
+    - "Modello di pricing (tier, fatturazione annuale/mensile)"
+    - "Target di clienti (persona e dimensione azienda)"
+    - "Competitor diretto con il loro pricing"
+    - "Casi d'uso concreti del prodotto"
+
+adversarial_personas:
+  cost_conscious_owner:
+    name: "Titolare PMI controlla-ogni-euro"
+    role: "Imprenditore di PMI italiana 10-50 dipendenti"
+    background: >
+      Imprenditore 45-60 anni, azienda manifatturiera o di servizi.
+      Diffida del cloud, preferisce software "una tantum" al canone.
+      Ha visto troppi abbonamenti diventare tasse invisibili nel bilancio.
+    core_beliefs:
+      - "Il canone mensile è un costo che non finisce mai"
+      - "Se smetto di pagare devo poter portare via i miei dati"
+      - "Meglio un software pagato una volta che funziona"
+    fears:
+      - "Rinnovi automatici che nessuno controlla in azienda"
+      - "Vendor lock-in e perdita di controllo sui dati"
+
+  skeptical_consultant:
+    name: "Consulente di settore scettico"
+    role: "Consulente che già usa 3-4 tool simili con i propri clienti"
+    background: >
+      Vede la tua proposta con gli occhi di chi ha già implementato strumenti
+      analoghi per i propri clienti. Misura il prezzo su ROI a 6 mesi,
+      considera il tuo prodotto uno dei tanti sul mercato.
+    core_beliefs:
+      - "La differenza la fa l'implementazione, non il software"
+      - "Il prezzo lo valuto in relazione al TCO vero, non al listino"
+      - "I miei clienti non sanno valutare un software, lo valuto io per loro"
+    fears:
+      - "Consigliare un vendor che sparisce dopo 18 mesi"
+      - "Dover rifare una migrazione dolorosa"
+
+  subscription_wary_finance_head:
+    name: "Direttore amministrativo anti-abbonamenti"
+    role: "Responsabile amministrazione/contabilità di azienda 50-200 dipendenti"
+    background: >
+      Gestisce 30+ abbonamenti SaaS diversi. Ogni nuovo canone deve essere
+      giustificato e rivisto annualmente. Il suo incubo sono i rinnovi
+      taciti e le fatture che crescono del 15% senza preavviso.
+    core_beliefs:
+      - "Fatturazione annuale con sconto vale più del servizio premium"
+      - "Devo poter esportare tutto in qualsiasi momento"
+      - "Se il vendor sparisce domani, non deve essere un disastro per me"
+    fears:
+      - "Aumenti di prezzo al rinnovo"
+      - "Dover spiegare al board un costo SaaS totale fuori controllo"
+
+report_focus:
+  extra_instructions: >
+    Distingui esplicitamente tra voci favorevoli (generate dalla KB) e voci
+    critiche (persona adversarial). Evita toni trionfalistici: se emerge
+    consenso positivo, verifica che non sia un artefatto della popolazione
+    di agenti. Identifica le leve di negoziazione concrete che i venditori
+    possono usare.

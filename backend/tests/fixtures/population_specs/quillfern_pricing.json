@@ -1,0 +1,51 @@
+{
+  "domain_summary": "FICTIONAL TEST FIXTURE. Quillfern Tea Co., an invented loose-leaf tea subscription, raises its monthly price from EUR 9.90 to EUR 12.90 with compostable pouches and a fifth pouch every three months.",
+  "total_agents": 4,
+  "segments": [
+    {
+      "segment_id": "loyal_subscribers",
+      "label": "Long-time subscribers",
+      "percentage": 25,
+      "count": 1,
+      "role_description": "Subscribers for more than a year who drink tea daily and know the range well.",
+      "key_attitudes": ["Value consistency of quality", "Notice any change to the box"],
+      "typical_motivations": ["Keep a reliable supply of tea they like"],
+      "typical_fears": ["Paying more for the same tea"],
+      "communication_style": "Calm, detailed, compares with past boxes."
+    },
+    {
+      "segment_id": "price_sensitive",
+      "label": "Price-sensitive subscribers",
+      "percentage": 25,
+      "count": 1,
+      "role_description": "Subscribers who joined for the price and track monthly spending closely.",
+      "key_attitudes": ["Compare every subscription they pay for"],
+      "typical_motivations": ["Cut recurring costs"],
+      "typical_fears": ["Small increases that add up over the year"],
+      "communication_style": "Short and direct, quotes numbers."
+    },
+    {
+      "segment_id": "eco_minded",
+      "label": "Sustainability-minded buyers",
+      "percentage": 25,
+      "count": 1,
+      "role_description": "Buyers who choose brands for packaging and sourcing.",
+      "key_attitudes": ["Reward real environmental changes", "Distrust green claims without proof"],
+      "typical_motivations": ["Reduce packaging waste at home"],
+      "typical_fears": ["Greenwashing used to justify a price increase"],
+      "communication_style": "Asks for evidence and certifications."
+    },
+    {
+      "segment_id": "competitor_switchers",
+      "label": "Subscribers who compare competitors",
+      "percentage": 25,
+      "count": 1,
+      "role_description": "Subscribers who tried other tea boxes and may switch again.",
+      "key_attitudes": ["Loyal to value, not to brands"],
+      "typical_motivations": ["Find the best tea for the money"],
+      "typical_fears": ["Missing a better offer"],
+      "communication_style": "Informal, mentions alternatives by price."
+    }
+  ],
+  "rationale": "Four equal segments keep the fixture small while covering loyalty, price, sustainability and switching, the four objections the brief asks about."
+}

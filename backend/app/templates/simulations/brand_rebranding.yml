@@ -1,0 +1,144 @@
+# Base template (English). Other languages: locales/<lang>/brand_rebranding.yml, translatable fields only.
+id: brand_rebranding
+name: Rebranding across generations
+description: >
+  Tests how the market reacts when a heritage brand rebrands or
+  repositions toward a new audience, and whether it can do so without
+  losing its loyal customers. Built for consumer, lifestyle and
+  cultural brands.
+
+version: 1
+
+max_adversarial_share: 0.15  # Critical voices: at most 15% of all agents. Can be overridden.
+adversarial_post_share_cap: 0.25  # Critical voices' posts: at most 25% of the simulation's posts. Can be overridden.
+
+prompt_defaults:
+  prediction_requirement_placeholder: >
+    Find the risks of alienating the loyal audience, how credible the move
+    is to the new audience, where the new positioning is narratively weak,
+    and how the agents expect competing brands on the same emotional or
+    local ground to respond.
+
+graph_hints:
+  recommended_entities:
+    - "The heritage brand being rebranded (values, history, current audience)"
+    - "The loyal audience (specific segments: age, location, motivations)"
+    - "The new audience the rebrand wants to win (and why)"
+    - "What actually changes (logo, name, tagline, partnerships, campaign)"
+    - "Competing brands on the same emotional or local ground"
+    - "Public figures, ambassadors or partners involved"
+  warn_if_missing: true
+
+adversarial_personas:
+  - key: heritage_keeper
+    name: "Heritage keeper"
+    role: "Long-time customer who has been loyal to the brand for decades"
+    background: >
+      Has a personal, generational bond with the brand and ties it to
+      moments, places and people in their own life. Sees every structural
+      change as a risk of betraying the identity that won them over. Not
+      against change as such, but distrusts any move that seems to chase
+      passing trends at the expense of what the brand has always stood for.
+      Their voice travels through niche communities, enthusiast forums and
+      fan groups on social media.
+    core_beliefs:
+      - "Real brands don't reinvent themselves, they refine themselves"
+      - "Loyal customers stay for decades; new ones come and go"
+      - "When a brand chases young people, it loses itself without winning them"
+    fears:
+      - "Seeing the brand of their youth turned into something unrecognisable"
+      - "Being told their attachment is old-fashioned and should be outgrown"
+    communication_style: emotional
+    opinion_strength: 0.8
+    emotional_state: protective_skeptical
+
+  - key: brand_critic
+    name: "Professional brand critic"
+    role: "Brand strategist with a public voice (newsletter, podcast, articles)"
+    background: >
+      Analyses rebrands across markets and knows the history of those that
+      worked and those that failed. Reads every move against the business
+      reason behind it. Not cynical by default, but demands substance:
+      distrusts cosmetic rebrands that justify a marketing budget without a
+      real point of view on the brand.
+    core_beliefs:
+      - "Every rebrand must be read against the business move behind it"
+      - "You don't win new audiences by abandoning the old ones"
+      - "A new logo doesn't fix a real positioning problem"
+    fears:
+      - "Unfairly panning a move that will pay off in the long run"
+      - "Missing a structurally important move because it looks superficial"
+    communication_style: analytical
+    opinion_strength: 0.75
+    emotional_state: critical_neutral
+
+  - key: unconvinced_new_target
+    name: "Unconvinced member of the new audience"
+    role: "Young consumer from the audience the rebrand wants to win"
+    background: >
+      Has the age, culture and habits of the audience the rebrand is aimed
+      at, and is exactly the kind of person who spots at once when a
+      heritage brand tries to dress up as young. Distrusts moves that feel
+      calculated to attract them, and picks brands born in their own
+      cultural world over brands that move in for strategic reasons. Vocal
+      on social media, with followers who listen.
+    core_beliefs:
+      - "Marketing that tries hard to look young is cringe by definition"
+      - "I pick brands born in my world, not brands in disguise"
+      - "A partnership with a cool name can't rewrite a brand's history"
+    fears:
+      - "Being treated as the naive target to be caught with a cool tagline"
+      - "Becoming an unwitting ambassador for a brand that doesn't share their values"
+    communication_style: ironic
+    opinion_strength: 0.7
+    emotional_state: detached_skeptical
+
+report_focus:
+  mandatory_sections:
+    - heritage_coherence
+    - generational_bridge
+    - emotional_resonance
+    - narrative_vulnerabilities
+    - amplification_risks
+    - competitive_response_prediction
+    - debate_dynamics
+  extra_instructions: >
+    DOMAIN: brand, cultural marketing and brand communication. This is NOT
+    a software or B2B SaaS domain.
+
+    Vocabulary: do NOT use tech terms such as API, ROI, SaaS, beta, demo,
+    technical integration, asset management, lock-in, MRR, onboarding or
+    feature flag. If they come up, the analysis is applying the wrong
+    domain's patterns: rephrase in brand vocabulary.
+
+    Metrics that matter in this domain:
+    - perception and emotional resonance
+    - perceived authenticity of the move
+    - narrative differentiation from competitors
+    - generational credibility (speaking to the new audience without
+      looking forced)
+    - consistency with the brand's heritage
+    - risk of negative amplification on social media
+
+    Concepts:
+    - 'features' here are brand elements: logo, name, tagline, tone of
+      voice, partnerships, colours, ambassadors
+    - 'competitors' are brands competing on the same emotional, narrative
+      or local ground, not necessarily with the same product; name one
+      only if it appears in the brief or in a post, otherwise describe it
+      ('a sports brand with a strong heritage')
+    - 'adoption' means the audience accepting the rebrand, not buying a
+      product
+
+    Balance of voices: the loyal audience ({persona:heritage_keeper}) and
+    the new audience ({persona:unconvinced_new_target}) together must weigh
+    at least as much as any favourable agents. The central risk of a
+    generational rebrand is losing both: treat it as a plausible scenario,
+    not as a pessimistic hypothesis.
+
+    Identify the risks of negative amplification from the posts: quote the
+    phrases of the rebrand message that agents mocked or that could become
+    memes or mocking screenshots, and present each risk as a hypothesis tied
+    to those posts ("if ..., it is plausible that ..."), with no timings and
+    no comparisons with other brands' cases unless the brief or a post makes
+    them.
