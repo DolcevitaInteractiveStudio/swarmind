@@ -188,6 +188,12 @@ ANALYTICAL BIAS RULES — APPLY TO EVERY REPORT
 22. ROLES. When you name an agent together with a role, use that agent's own role (get_top_influencers,
     interview_agent): never another agent's role.
 
+23. NO INTERNAL NAMES. Write only about the agents that took part in this run. Never mention a critical
+    voice or an archetype that is not in the ADVERSARIAL AGENTS block, and never write that a voice, a role
+    or an archetype "was not present", "was missing" or "did not take part". Never write template ids,
+    configuration keys (names with underscores), sampling methods or how the system chose the agents: the
+    system states those facts itself in the {H_APPENDIX}.
+
 REPORT VOCABULARY (field or value → label to write)
 {VOCABULARY}
 
@@ -462,7 +468,6 @@ CONFIDENCE LEVEL (pre-computed, deterministic: use it as is, never override it)
 ════════════════════════════════════════
 {confidence_block}
 
-{adversarial_truncation_note}
 ════════════════════════════════════════
 POPULATION COMPOSITION (from Demographer, persona-pipeline)
 ════════════════════════════════════════
@@ -512,11 +517,6 @@ class ReportAgent:
         self.max_tool_calls = max_tool_calls
         self.max_reflection_rounds = max_reflection_rounds
         self.temperature = temperature
-
-    @staticmethod
-    def _adversarial_share_disclosure(stats: dict | None, lang: str = DEFAULT_LANGUAGE) -> str:
-        """Frase per l'appendice con la quota reale di post adversarial, calcolata a fine run."""
-        return postprocess.adversarial_share_sentence(stats, lang)
 
     @classmethod
     def _ensure_share_disclosure(cls, report: str, disclosure: str) -> str:
@@ -722,35 +722,12 @@ class ReportAgent:
             debate_metrics = {}
             debate_metrics_block = "(metrics not available for this simulation)"
 
-        # Patch 3: nota soft sul troncamento adversari (max_adversarial_share)
-        adversarial_truncation_note = ""
-        try:
-            from app.utils.state_store import StateStore
-            from app.config import Config
-            _store = StateStore(Config.SIMULATIONS_DIR)
-            meta = _store.load_meta(state.simulation_id) or {}
-            trunc = meta.get("adversarial_truncation")
-            if trunc:
-                adversarial_truncation_note = (
-                    f"════════════════════════════════════════\n"
-                    f"ADVERSARIAL TRUNCATION NOTICE (pre-computed)\n"
-                    f"════════════════════════════════════════\n"
-                    f"Adversarial agents originally specified: {trunc.get('original_count')}. "
-                    f"Kept after the max_adversarial_share={trunc.get('max_share')} constraint: "
-                    f"{trunc.get('kept_count')}. Selection: {trunc.get('method')}.\n"
-                    f"INCLUDE this information as an additional disclosure in the "
-                    f"{t(language, 'report.headings.appendix')}, under "
-                    f"'{t(language, 'report.adversarial_note_heading').strip('*: ')}', as a separate "
-                    f"paragraph explaining: the number of simulated adversarial agents was capped "
-                    f"to avoid a structural criticism bias; some adversarial voices originally "
-                    f"proposed were excluded by random sampling.\n"
-                )
-                log.info("adversarial_truncation_in_report",
-                         simulation_id=state.simulation_id,
-                         original=trunc.get("original_count"),
-                         kept=trunc.get("kept_count"))
-        except Exception as trunc_err:
-            log.debug("adversarial_truncation_load_failed", error=str(trunc_err))
+        # Critical voices left out by the cap on agents (spawn): stated by the code in the appendix, in plain
+        # language. The model is not told about them: it wrote that the excluded voices "were not present"
+        trunc, agent_cap = self._critical_voices_meta(state.simulation_id)
+        if trunc:
+            log.info("adversarial_truncation_in_report", simulation_id=state.simulation_id,
+                     original=trunc.get("original_count"), kept=trunc.get("kept_count"))
 
         # Prima alcuni adversari, poi i naturali, fino a max 12
         def _is_adv(a):
@@ -773,10 +750,21 @@ class ReportAgent:
         # Carica template della simulazione (se presente) per sezioni dinamiche + istruzioni extra
         dynamic_sections_md, extra_instructions, template_id = self._load_template_metadata(
             state.simulation_id, language)
-        share_disclosure = self._adversarial_share_disclosure(adversarial_post_stats, language)
+        template_info = self._template_info(template_id, language)
+        # Archetypes of the template that are not in the run (left out by the cap on agents): the instructions
+        # never name them, and the report never mentions them
+        run_names = {str(_agent_field(a, "name", "") or "").strip().lower() for a in adv_agents}
+        absent_names = [n for n in template_info["persona_names"] if n.strip().lower() not in run_names]
+        absent_names += [n for n in (trunc or {}).get("excluded") or [] if n and n.strip().lower() not in run_names]
+        extra_instructions = postprocess.drop_names(extra_instructions, absent_names)
+        if agent_cap is None:
+            agent_cap = template_info["agent_cap"]
+        internal_terms = [*postprocess.INTERNAL_KEYS, *template_info["all_ids"], *absent_names]
+        share_disclosure = postprocess.critical_voices_disclosure(
+            adversarial_post_stats, language, agent_cap=agent_cap if adversarial_count else None, truncation=trunc)
         # Parametri dell'appendice dai dati salvati della simulazione: righe del codice, mai scritte dal modello
         appendix_parameters = postprocess.appendix_parameters({
-            "template": template_id or t(language, "report.template_none"), "agents": len(state.agents),
+            "template": template_info["name"] or t(language, "report.template_none"), "agents": len(state.agents),
             "rounds": state.current_round, "topic": state.topic, "question": prediction_requirement,
         }, language)
         archetypes_limitation = self._archetypes_limitation(template_id, population_spec, language)
@@ -803,7 +791,6 @@ class ReportAgent:
                     adversarial_block=adversarial_block,
                     debate_metrics_block=debate_metrics_block,
                     confidence_block=postprocess.confidence_prompt_block(confidence),
-                    adversarial_truncation_note=adversarial_truncation_note,
                     population_block=self._format_population_block(population_spec, adversarial_names, language),
                 ), language),
             },
@@ -933,6 +920,7 @@ class ReportAgent:
             agent_roles={str(_agent_field(a, "name", "") or ""): str(_agent_field(a, "role", "") or "")
                          for a in state.agents},
             appendix_parameters=appendix_parameters,
+            internal_terms=internal_terms,
             lang=language,
             stance=stance,
             population={"agents": len(state.agents), "natural": len(nat_agents),
@@ -999,7 +987,8 @@ class ReportAgent:
                          lang: str = DEFAULT_LANGUAGE, metrics_table: str | None = None,
                          natural_names: list[str] | None = None, stance: dict | None = None,
                          agent_roles: dict[str, str] | None = None, appendix_parameters: str | None = None,
-                         claims: dict | None = None, population: dict | None = None) -> str:
+                         claims: dict | None = None, population: dict | None = None,
+                         internal_terms: list[str] | None = None) -> str:
         """Le parti del report che appartengono al codice, applicate dopo la risposta del modello.
 
         Ordine (ogni passo lavora sul testo lasciato dai precedenti; nessuno deve creare input che un passo
@@ -1017,7 +1006,8 @@ class ReportAgent:
           8. citazioni tagliate a meta' parola (accorciate all'ultima frase completa o tolte); affermazioni
              degli agenti (scenari, previsione): solo i numeri che non sono nel brief ne' calcolati dal
              sistema, dopo che i passi 6-7 hanno finito di cambiare le cifre;
-          9. etichette a meta' frase, riga delle raccomandazioni, riga degli archetipi, quota adversarial;
+          9. etichette a meta' frase, riga delle raccomandazioni, riga degli archetipi, nomi interni (chiavi di
+            configurazione, id dei template, archetipi esclusi), paragrafo delle voci critiche;
          10. controllo finale dei frammenti (repair_text) sul testo completo.
         Dopo ogni passo che toglie frasi (5-10), repair_orphan_references ripara o toglie la frase seguente
         se comincia rimandando alla frase tolta ("Questa dispersione, ..."): report_text_repaired.
@@ -1143,6 +1133,12 @@ class ReportAgent:
                 fixed += n
             if fixed:
                 log.info("report_template_limitation_fixed", lines=fixed)
+        if internal_terms:
+            before = report
+            report, internal = postprocess.strip_internal_names(report, internal_terms)
+            for found in internal:
+                log.warning("report_internal_name_removed", **found)
+            report = orphans(before, report)
         report = cls._ensure_share_disclosure(report, share_disclosure)
         # 10
         before = report
@@ -1200,6 +1196,45 @@ class ReportAgent:
                 continue
             md_parts.append(f"## {section_title(sec_name, lang)}\n{sec_def['prompt']}")
         return "\n\n".join(md_parts)
+
+    @staticmethod
+    def _critical_voices_meta(simulation_id: str) -> tuple[dict | None, float | None]:
+        """(truncation of the critical voices at spawn, cap on the share of critical AGENTS) from the saved meta."""
+        try:
+            from app.config import Config
+            from app.utils.state_store import StateStore
+            meta = StateStore(Config.SIMULATIONS_DIR).load_meta(simulation_id) or {}
+        except Exception as meta_err:
+            log.debug("adversarial_truncation_load_failed", error=str(meta_err))
+            return None, None
+        cap = meta.get("adversarial_agent_share_cap")
+        try:
+            cap = float(cap) if cap is not None else None
+        except (TypeError, ValueError):
+            cap = None
+        return meta.get("adversarial_truncation") or None, cap
+
+    @staticmethod
+    def _template_info(template_id: str | None, lang: str) -> dict:
+        """The template as the reader knows it: its name, its critical-voice archetypes and its cap on the share of
+        critical agents; plus every template id, an internal name the report never shows."""
+        info = {"name": None, "persona_names": [], "agent_cap": None, "all_ids": []}
+        try:
+            from app.templates import get_registry
+            registry = get_registry()
+            info["all_ids"] = [tpl["id"] for tpl in registry.list_all(lang)]
+            tpl = registry.get(template_id, lang) if template_id else None
+        except Exception as tpl_err:
+            log.warning("report_template_info_failed", template_id=template_id, error=str(tpl_err))
+            return info
+        if tpl:
+            info["name"] = str(tpl.get("name") or "").strip() or None
+            info["persona_names"] = [str(p.get("name")) for p in tpl.get("adversarial_personas") or [] if p.get("name")]
+            try:
+                info["agent_cap"] = float(tpl.get("max_adversarial_share", 0.15))
+            except (TypeError, ValueError):
+                info["agent_cap"] = 0.15
+        return info
 
     def _load_template_metadata(self, simulation_id: str,
                                 lang: str = DEFAULT_LANGUAGE) -> tuple[str, str, str | None]:

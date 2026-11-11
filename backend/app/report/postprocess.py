@@ -485,7 +485,8 @@ _BOLD_LABEL_LINE = re.compile(r"^\s*\*\*[^*\n]{2,80}\*\*\s*:?\s*$")
 
 _SHARE_LABEL = re.compile(
     r"quota\s+(?:di|dei)\s+post\s+(?:adversarial|avversar\w*)|adversarial\s+post\s+share|"
-    r"share\s+of\s+adversarial\s+posts", re.I)
+    r"share\s+of\s+adversarial\s+posts|quota\s+(?:di|dei)\s+post\s+delle\s+voci\s+critiche|"
+    r"share\s+of\s+posts\s+(?:by|from)\s+(?:the\s+)?critical\s+voices", re.I)
 _ADV_WORD = re.compile(r"advers|avversar", re.I)
 _POST_WORD = re.compile(r"\bposts?\b", re.I)
 _SHARE_FIGURE = re.compile(r"\d+(?:[.,]\d+)?\s*%|\b\d+\s+(?:post\s+)?(?:su|of|out\s+of)\s+\d+\b", re.I)
@@ -508,6 +509,106 @@ def adversarial_share_sentence(stats: dict | None, lang: str = DEFAULT_LANGUAGE)
         total_agents=stats["total_agents"],
         cap=fmt_pct(stats["cap"], 1, lang),
     )
+
+
+def _cap_pct(value: float, lang: str) -> str:
+    """15%, 12,5%: senza decimali quando il tetto e' un numero intero di punti."""
+    pct = float(value) * 100
+    return fmt_pct(value, 0 if abs(pct - round(pct)) < 1e-9 else 1, lang)
+
+
+def critical_voices_disclosure(stats: dict | None, lang: str = DEFAULT_LANGUAGE, *,
+                               agent_cap: float | None = None, truncation: dict | None = None) -> str:
+    """Le frasi del codice nel paragrafo "Voci critiche" dell'appendice, in parole del lettore: la quota di
+    post delle voci critiche, i due tetti diversi (quota di AGENTI critici e quota di POST critici) e le voci
+    previste ma escluse dal tetto sugli agenti. Mai chiavi di configurazione o nomi di metodi."""
+    parts = [adversarial_share_sentence(stats, lang)]
+    has_voices = bool((stats or {}).get("adversarial_agents")) or bool(truncation)
+    post_cap = (stats or {}).get("cap")
+    if agent_cap is None and truncation:
+        agent_cap = truncation.get("max_share")
+    if has_voices and agent_cap is not None and post_cap is not None:
+        parts.append(t(lang, "report.share.caps", agent_cap=_cap_pct(agent_cap, lang),
+                       post_cap=_cap_pct(post_cap, lang)))
+    if truncation and agent_cap is not None:
+        try:
+            planned, kept = int(truncation["original_count"]), int(truncation["kept_count"])
+        except (KeyError, TypeError, ValueError):
+            planned = kept = 0
+        excluded = planned - kept
+        if excluded > 0 and kept > 0:
+            excluded_text = (t(lang, "report.share.excluded_one") if excluded == 1
+                             else t(lang, "report.share.excluded_many", count=excluded))
+            parts.append(t(lang, "report.share.truncated_one" if kept == 1 else "report.share.truncated_many",
+                           planned=planned, kept=kept, agent_cap=_cap_pct(agent_cap, lang), excluded=excluded_text))
+    return " ".join(parts)
+
+
+# ── Nomi interni: mai nel report ──────────────────────────────────────────────
+# Chiavi di configurazione e nomi di metodi che il lettore non deve vedere (i fatti li dice il paragrafo
+# "Voci critiche" dell'appendice, scritto dal codice). Gli id dei template e i nomi degli archetipi esclusi
+# si aggiungono per ogni report.
+INTERNAL_KEYS = (
+    "max_adversarial_share", "adversarial_post_share_cap", "adversarial_agent_share_cap", "adversarial_truncation",
+    "adversarial_personas", "random_sample", "template_id", "extra_instructions", "mandatory_sections",
+    "report_focus", "original_count", "kept_count", "max_share", "persona_key",
+)
+
+
+def drop_names(text: str, names: list[str]) -> str:
+    """Toglie dei nomi dagli elenchi tra parentesi di un testo: "(A, B, C)" -> "(A, B)"; una parentesi rimasta
+    vuota si toglie. Serve alle istruzioni del template che nominano archetipi esclusi dalla simulazione."""
+    wanted = {n.strip().lower() for n in names or [] if n and n.strip()}
+    if not text or not wanted:
+        return text
+
+    def paren(m):
+        items = [x.strip() for x in m.group(1).split(",")]
+        kept = [x for x in items if x.lower() not in wanted]
+        if len(kept) == len(items):
+            return m.group(0)
+        return f" ({', '.join(kept)})" if kept else ""
+
+    return re.sub(r"\s*\(([^()]*)\)", paren, text)
+
+
+def _internal_term_re(terms: list[str]) -> re.Pattern | None:
+    terms = sorted({x.strip() for x in terms if x and len(x.strip()) >= 3}, key=len, reverse=True)
+    if not terms:
+        return None
+    return re.compile(r"(?<![\w])`?(?:" + "|".join(re.escape(x) for x in terms) + r")`?(?![\w])", re.I)
+
+
+def strip_internal_names(md: str, terms: list[str]) -> tuple[str, list[dict]]:
+    """Toglie dal report le frasi con un nome interno: chiavi di configurazione, id dei template, nomi dei
+    metodi di campionamento, archetipi esclusi dalla simulazione ("la voce del Competitor indiretto non era
+    presente"). Titoli, tabelle e codice restano. Ritorna (report, [{...}])."""
+    pattern = _internal_term_re(terms)
+    if not md or pattern is None:
+        return md, []
+    found: list[dict] = []
+    out, in_code = [], False
+    for line in md.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_code = not in_code
+        if in_code or not stripped or stripped.startswith("|") or _ANY_HEADING.match(line) \
+                or not pattern.search(line):
+            out.append(line)
+            continue
+        prefix, body = _LINE_PREFIX.match(line).groups()
+        sentences = claim_sentences(body)
+        kept = []
+        for s in sentences:
+            m = pattern.search(s)
+            if m:
+                found.append({"term": m.group(0).strip("`"), "sentence": s[:200]})
+            else:
+                kept.append(s)
+        rest = " ".join(kept).strip()
+        if rest.strip("*_ :"):
+            out.append(prefix + rest)
+    return (_tidy("\n".join(out)) if found else md), found
 
 
 def _norm(text: str) -> str:

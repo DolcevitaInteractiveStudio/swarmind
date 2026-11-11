@@ -83,9 +83,9 @@ SECTION_DESCRIPTIONS = {
     },
     "competitive_response_prediction": {
         "prompt": (
-            "From the posts of the competitor voices (adversarial 'indirect "
-            "competitor') and of the agents who mention competitors, and from "
-            "the competitors named in the brief, set out how competitors could "
+            "From the posts of the agents who speak for a competitor or "
+            "mention competitors, and from the competitors named in the "
+            "brief, set out how competitors could "
             "respond, as hypotheses grounded in those posts ('if ..., it is "
             "plausible that ...'): the narratives they could use, the features "
             "they could stress, the segments they could try to protect. Name a "

@@ -283,7 +283,7 @@ report:
     pragmatic: "pragmatico"
     analytical: "analitico"
   template_none: "nessuno"
-  adversarial_note_heading: "**Natura degli agenti adversarial:**"
+  adversarial_note_heading: "**Voci critiche:**"
   archetypes:
     population_demographer: "La composizione della popolazione è proposta dal Demographer (un modello LLM) a partire dal brief"
     population_kb: "Gli agenti naturali derivano dalle entità estratte dalla knowledge base"
@@ -307,8 +307,8 @@ report:
     **Criteri di selezione degli agenti citati:**
     I top 3 influencer sono selezionati per volume di post pubblicati. Gli altri agenti partecipano al calcolo delle metriche (posizione, convinzione, entropia) ma non sono citati individualmente nel report. {top3_sentence}
 
-    **Natura degli agenti adversarial:**
-    Se la simulazione include agenti marcati is_adversarial=true, questi sono stati deliberatamente inseriti per mettere alla prova le posizioni prevalenti. Non rappresentano una distribuzione di mercato naturale: la loro presenza amplifica artificialmente le critiche per identificare vulnerabilità.
+    **Voci critiche:**
+    Le voci critiche sono agenti inseriti deliberatamente dal sistema per mettere alla prova le posizioni prevalenti. Non rappresentano una distribuzione di mercato naturale: la loro presenza amplifica le critiche per far emergere le vulnerabilità.
 
     **Confidence score — natura della metrica:**
     Il livello di confidenza è calcolato dal sistema, non dal modello: parte dalla stabilità delle posizioni degli agenti sul cambiamento (consenso e spostamento tra la prima e l'ultima misura; per le simulazioni senza misura della posizione, da variance e opinion_entropy della convinzione) ed è limitato dalla numerosità del campione ({confidence_rule}). Per questo gli scenari hanno solo una plausibilità qualitativa, senza percentuali. NON è calibrato retroattivamente contro esiti reali (nessun Brier score, nessun track record storico). Va letto come indicatore interno di stabilità delle posizioni simulate, non come probabilità di accuratezza predittiva verificata.
@@ -318,14 +318,28 @@ report:
     {archetypes_limitation}
     - Le posizioni rilevate possono essere in parte un artefatto del prompt iniziale di simulazione: prompt entusiasti o pessimisti possono orientare le dinamiche. Test A/B con prompt variati non sono inclusi in questa esecuzione.
     - Le raccomandazioni operative sono coerenti con lo stato del prodotto dichiarato nel topic ma non sono state validate con test reali di efficacia.
+  # Frasi del codice nel paragrafo "Voci critiche" dell'appendice (postprocess.critical_voices_disclosure)
   share:
-    not_recorded: "Quota di post adversarial: non registrata per questa simulazione."
-    none: "Quota di post adversarial: 0% (nessun agente adversarial in questa simulazione)."
+    not_recorded: "Quota di post delle voci critiche: non registrata per questa simulazione."
+    none: "Quota di post delle voci critiche: 0% (nessuna voce critica in questa simulazione)."
     full: >-
-      Quota di post adversarial: {share} ({adversarial_posts} post su {posts} dell'intera simulazione),
-      da {adversarial_agents} agenti adversarial su {total_agents}; tetto configurato: {cap}.
-      La quota dipende da quanto spesso il sistema fa intervenire questi agenti: non misura quanto
-      le critiche siano diffuse sul mercato.
+      Quota di post delle voci critiche: {share} ({adversarial_posts} post su {posts} dell'intera
+      simulazione), da {adversarial_agents} voci critiche su {total_agents} agenti. La quota dipende da
+      quanto spesso il sistema fa intervenire queste voci: non misura quanto le critiche siano diffuse
+      sul mercato.
+    # I due tetti sono diversi: uno conta gli agenti, l'altro i post
+    caps: >-
+      Due limiti diversi regolano le voci critiche: al massimo il {agent_cap} degli agenti della
+      simulazione può essere una voce critica (quota di agenti), e al massimo il {post_cap} dei post può
+      venire dalle voci critiche (quota di post).
+    truncated_one: >-
+      Erano previste {planned} voci critiche; ne è stata tenuta {kept} per rispettare la quota massima di
+      voci critiche ({agent_cap} degli agenti); {excluded}
+    truncated_many: >-
+      Erano previste {planned} voci critiche; ne sono state tenute {kept} per rispettare la quota massima
+      di voci critiche ({agent_cap} degli agenti); {excluded}
+    excluded_one: "quella esclusa è stata scelta a caso."
+    excluded_many: "le {count} escluse sono state scelte a caso."
   relabel:
     natural_many: "voci critiche (agenti adversarial)"
     natural_one: "una voce critica (agente adversarial)"

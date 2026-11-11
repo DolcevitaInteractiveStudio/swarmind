@@ -394,7 +394,9 @@ def spawn_agents_task(
 
             # Il tetto ai post serve al run, che non legge il template
             try:
-                store.save_meta(simulation_id, {"adversarial_post_share_cap": _post_share_cap(template_meta)})
+                # I due tetti diversi, spiegati nell'appendice del report: quota di AGENTI critici e di POST critici
+                store.save_meta(simulation_id, {"adversarial_post_share_cap": _post_share_cap(template_meta),
+                                                "adversarial_agent_share_cap": max_share})
             except Exception as _meta_err:
                 log.warning("save_meta_failed", simulation_id=simulation_id, error=str(_meta_err))
 
@@ -406,10 +408,14 @@ def spawn_agents_task(
                     import random as _random
                     # Seed deterministico per riproducibilita' della stessa sim
                     _random.seed(f"{simulation_id}:adv_truncate")
+                    planned_specs = adversarial_specs
                     adversarial_specs = _random.sample(adversarial_specs, max_allowed)
                     adversarial_truncation_info = {
                         "original_count": original_count,
                         "kept_count": max_allowed,
+                        # Le voci escluse: il report non ne parla mai come di voci "assenti"
+                        "excluded": [str(s.get("name") or s.get("key") or "") for s in planned_specs
+                                     if not any(s is kept for kept in adversarial_specs)],
                         "max_share": max_share,
                         "num_agents": num_agents,
                         "method": "random_sample",
