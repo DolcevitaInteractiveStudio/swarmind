@@ -1346,6 +1346,110 @@ def mask_post_quotes(sentence: str, agent_texts: list[tuple[str, str]]) -> str:
     return _QUOTE_SPAN.sub(mask, sentence)
 
 
+# ── Citazioni tagliate a meta' parola ─────────────────────────────────────────
+# Il report cita i post: una citazione che finisce a meta' parola ("vorrei dat[...]", "le fiere f[...]") si
+# accorcia all'ultima frase completa; senza una frase completa si toglie la frase del report che la contiene.
+
+_ANY_QUOTE = re.compile(r"\"([^\"\n]+)\"|“([^”\n]+)”|«([^»\n]+)»")
+_ELLIPSIS_MARK = r"(?:\[\s*(?:\.\.\.|…)\s*\]|\(\s*(?:\.\.\.|…)\s*\)|\.\.\.|…)"
+# Un'ellissi tra parentesi attaccata a una parola: "dat[...]" e' sempre un taglio, mai uno stile
+_BRACKET_CUT = re.compile(r"(?<=\w)(?:\[\s*(?:\.\.\.|…)\s*\]|\(\s*(?:\.\.\.|…)\s*\))")
+_TRAILING_ELLIPSIS = re.compile(rf"\s*{_ELLIPSIS_MARK}[\s.,;:]*$")
+# Almeno tante parole nella frase completa che resta della citazione
+_CUT_QUOTE_MIN_WORDS = 3
+
+
+def _continues_word(head: str, sources: list[str]) -> bool:
+    """head (la citazione fino al taglio) sta in un testo degli agenti e li' l'ultima parola continua:
+    "le fiere f" in "le fiere fanno...". Falso se una ricorrenza finisce a fine parola."""
+    tokens = head.replace("’", "'").split()
+    if len(tokens) < 2 and len(head) < 8:
+        return False
+    pattern = re.compile(r"\s+".join(re.escape(tok) for tok in tokens), re.I)
+    continued = False
+    for source in sources:
+        text = source.replace("’", "'")
+        for m in pattern.finditer(text):
+            if m.end() < len(text) and text[m.end()].isalnum():
+                continued = True
+            else:
+                return False
+    return continued
+
+
+def quote_cut_at(inner: str, sources: list[str]) -> int | None:
+    """Dove la citazione e' tagliata a meta' parola (indice in inner), o None se non lo e'."""
+    bracket = _BRACKET_CUT.search(inner)
+    if bracket:
+        return bracket.start()
+    trailing = _TRAILING_ELLIPSIS.search(inner)
+    head = inner[: trailing.start()] if trailing else inner.rstrip()
+    if head and head[-1].isalnum() and _continues_word(head, sources):
+        return len(head)
+    return None
+
+
+def _complete_sentences(head: str) -> str:
+    """Le frasi complete all'inizio di head (che finisce a meta' parola), o "" se non ce n'e' una."""
+    from ..utils.excerpt import SENTENCE_END
+    ends = [m.end() for m in SENTENCE_END.finditer(head + " ") if m.end() <= len(head)]
+    kept = head[: ends[-1]].strip() if ends else ""
+    return kept if len(kept.split()) >= _CUT_QUOTE_MIN_WORDS else ""
+
+
+def fix_cut_quotes(md: str, agent_texts: list[tuple[str, str]] | None = None) -> tuple[str, list[dict]]:
+    """Le citazioni tagliate a meta' parola: accorciate all'ultima frase completa, oppure tolte con la frase
+    del report che le contiene. Tabelle, titoli e codice restano. Ritorna (report, [{...}])."""
+    if not md:
+        return md, []
+    sources = [text for _, text in (agent_texts or []) if text]
+    found: list[dict] = []
+    out, in_code, changed = [], False, False
+    for line in md.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_code = not in_code
+        if in_code or not stripped or stripped.startswith("|") or _ANY_HEADING.match(line):
+            out.append(line)
+            continue
+        prefix, body = _LINE_PREFIX.match(line).groups()
+        edits: list[tuple[int, int, str]] = []    # (start, end, testo nuovo) nel body
+        drop_at: list[int] = []                   # posizioni di citazioni da togliere con la loro frase
+        for m in _ANY_QUOTE.finditer(body):
+            group = next(i for i, g in enumerate(m.groups(), 1) if g is not None)
+            inner = m.group(group)
+            cut = quote_cut_at(inner, sources)
+            if cut is None:
+                continue
+            kept = _complete_sentences(inner[:cut])
+            if kept:
+                edits.append((m.start(group), m.end(group), kept))
+                found.append({"action": "shortened", "quote": inner[:200], "kept": kept[:200]})
+            else:
+                drop_at.append(m.start())
+                found.append({"action": "removed", "quote": inner[:200]})
+        if not edits and not drop_at:
+            out.append(line)
+            continue
+        changed = True
+        # Confini delle frasi senza guardare dentro le citazioni (un punto in una citazione non chiude la frase)
+        masked = _ANY_QUOTE.sub(lambda q: q.group(0)[0] + "x" * (len(q.group(0)) - 2) + q.group(0)[-1], body)
+        starts = [0] + [s.end() for s in _SENT_SPLIT.finditer(masked)]
+        spans = [(a, b) for a, b in zip(starts, starts[1:] + [len(body)])]
+        kept_parts = []
+        for a, b in spans:
+            if any(a <= pos < b for pos in drop_at):
+                continue
+            part = body[a:b]
+            for start, end, new in sorted((e for e in edits if a <= e[0] < b), reverse=True):
+                part = part[: start - a] + new + part[end - a:]
+            kept_parts.append(part.strip())
+        rest = " ".join(p for p in kept_parts if p).strip()
+        if rest.strip("*_ :—–-"):
+            out.append(prefix + rest)
+    return (_tidy("\n".join(out)) if changed else md), found
+
+
 def _split_clauses(sentence: str) -> list[tuple[str, str]]:
     """[(separatore prima, clausola)], separando su , e ; fuori da parentesi e virgolette."""
     parts, buf, sep, depth, quote = [], "", "", 0, None

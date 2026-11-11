@@ -28,6 +28,7 @@ from ..core.i18n import DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES, normalize_languag
 from ..core.llm import get_llm
 from ..population.integration import render_subject_card
 from ..simulation.engine import SimulationState
+from ..utils.excerpt import trim_excerpt
 from . import postprocess
 from .sections import ALWAYS_SECTIONS, SECTION_DESCRIPTIONS, section_title
 from .metrics import compute_all_debate_metrics
@@ -1013,8 +1014,9 @@ class ReportAgent:
           6. quote di posizione attaccate a un segmento (prima delle quote di popolazione: una quota di
              posizione non deve essere letta come quota di composizione);
           7. quote di composizione della popolazione e conteggi usati come peso (scenari, previsione);
-          8. affermazioni degli agenti (scenari, previsione): solo i numeri che non sono nel brief ne'
-             calcolati dal sistema, dopo che i passi 6-7 hanno finito di cambiare le cifre;
+          8. citazioni tagliate a meta' parola (accorciate all'ultima frase completa o tolte); affermazioni
+             degli agenti (scenari, previsione): solo i numeri che non sono nel brief ne' calcolati dal
+             sistema, dopo che i passi 6-7 hanno finito di cambiare le cifre;
           9. etichette a meta' frase, riga delle raccomandazioni, riga degli archetipi, quota adversarial;
          10. controllo finale dei frammenti (repair_text) sul testo completo.
         Dopo ogni passo che toglie frasi (5-10), repair_orphan_references ripara o toglie la frase seguente
@@ -1114,6 +1116,11 @@ class ReportAgent:
                 log.warning("report_population_share_removed", simulation_id=population.get("simulation_id"), **share)
             report = orphans(before, report)
         # 8
+        before = report
+        report, cut_quotes = postprocess.fix_cut_quotes(report, (claims or {}).get("agent_texts"))
+        for found in cut_quotes:
+            log.warning("report_cut_quote_fixed", **found)
+        report = orphans(before, report)
         if claims is not None:
             before = report
             report = cls._mark_claims(report, claims, lang)
@@ -1275,7 +1282,8 @@ class ReportAgent:
             agent = post.get("author_name") or post.get("agent_name") or post.get("author_id") or post.get("agent_id", "?")
             if adversarial_ids and post.get("author_id") in adversarial_ids:
                 agent += ", critical voice is_adversarial=true"
-            content = post.get("content", "")[:200]
+            # Cut at the end of a sentence or of a word, never mid-word: the report quotes these lines
+            content = trim_excerpt(post.get("content") or "", 200)
             lines.append(f"{i}. [{agent}]: {content}")
         return "\n".join(lines)
 

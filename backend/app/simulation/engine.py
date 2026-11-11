@@ -51,6 +51,7 @@ from ..core.llm_response import llm_log_fields
 from ..config import Config
 from ..memory.chroma_client import ChromaSkipped, chroma_settings, error_text, is_outage, run_chroma
 from ..memory.knowledge_base import KB_PROMPT_EXCERPTS, format_kb_excerpts
+from ..utils.excerpt import trim_excerpt
 
 log = structlog.get_logger()
 
@@ -460,7 +461,7 @@ class SimulationEngine:
                             "round": repost["round"],
                             "author_id": repost["author_id"],
                             "author_name": repost["author_name"],
-                            "content_preview": (repost.get("content") or "")[:200],
+                            "content_preview": trim_excerpt(repost.get("content") or "", 200),
                             "action": "REPOST",
                             "target_post_id": real_post_id,
                             "likes": 0,
@@ -503,7 +504,7 @@ class SimulationEngine:
                     "round": post["round"],
                     "author_id": post["author_id"],
                     "author_name": post["author_name"],
-                    "content_preview": (post.get("content") or "")[:200],
+                    "content_preview": trim_excerpt(post.get("content") or "", 200),
                     "action": post["action"],
                     "likes": 0,
                     "dislikes": 0,
@@ -739,7 +740,7 @@ class SimulationEngine:
             ][-3:]
             if not own_posts:
                 return "no_recent_posts"
-            posts_block = "\n".join(f"- {p[:200]}" for p in own_posts)
+            posts_block = "\n".join(f"- {trim_excerpt(p, 200)}" for p in own_posts)
 
             # Prompt differenziato per adversari: rinforza il ruolo critico invece di rivalutare neutralmente
             if getattr(agent, "is_adversarial", False):
@@ -922,7 +923,7 @@ class SimulationEngine:
             "round": disruption["round"],
             "author_id": disruption["author_id"],
             "author_name": disruption["author_name"],
-            "content_preview": (disruption.get("content") or "")[:200],
+            "content_preview": trim_excerpt(disruption.get("content") or "", 200),
             "action": "ANNOUNCE",
             "likes": 0,
             "dislikes": 0,

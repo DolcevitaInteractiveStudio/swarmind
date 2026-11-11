@@ -28,6 +28,7 @@ from ..core.i18n import DEFAULT_LANGUAGE, language_directive, t, with_directive
 from ..core.llm import get_llm
 from ..core.llm_response import llm_log_fields
 from ..memory.agent_memory import AgentMemory
+from ..utils.excerpt import trim_excerpt
 from .response_parser import OUTCOME_OK, parse_agent_reply, parse_json_object
 from .stance import SPAWN_ROUND, STANCE_ENUM, record_stance
 
@@ -180,7 +181,7 @@ class Agent:
         def _fmt_post(item: dict) -> str:
             sid = item.get("_short_id", "?")
             author = item.get("author_name") or item.get("author", "?")
-            content = (item.get("content") or "")[:200]
+            content = trim_excerpt(item.get("content") or "", 200)
             likes = item.get("likes", 0)
             dislikes = item.get("dislikes", 0)
             reposts = item.get("reposts", 0)
