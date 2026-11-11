@@ -7,6 +7,7 @@ GET  /api/graph/<project_id>/nodes → nodi per visualizzazione D3
 POST /api/graph/<project_id>/rebuild → ricostruisce il grafo dal file sorgente (chiamate LLM)
 """
 import os
+import shutil
 import uuid
 
 from flask import Blueprint, request, jsonify, g, current_app
@@ -24,6 +25,68 @@ ALLOWED_EXT = {".pdf", ".txt", ".md", ".docx", ".json", ".csv"}
 
 def _store() -> StateStore:
     return StateStore(current_app.config["SIMULATIONS_DIR"])
+
+
+# ── Graph builds on the system key ─────────────────────────────────────────────
+# A user with a provider key of their own builds graphs with it. Without one, the build runs on the shared
+# system key (GROQ_API_KEY), at most GRAPH_SYSTEM_KEY_MONTHLY_LIMIT times per quota period. Before, those builds
+# were not counted anywhere.
+
+def _use_own_credential(user_id: str, provider: str | None, models: dict) -> tuple[str | None, str | None, dict]:
+    """(provider, credential_id, models) of the user's own key for a build without a credential, or
+    (provider, None, models) if the user has none. Models chosen for another provider are dropped."""
+    from app.core.llm_router import own_credential
+    cred = own_credential(user_id, provider)
+    if cred is None:
+        return provider, None, models
+    if provider and provider != cred.provider:
+        models = {k: None for k in models}
+    return cred.provider, cred.id, models
+
+
+def _reserve_system_graph_build(sub) -> bool:
+    """Counts a graph build on the system key in the current quota period, only if there is room. Atomic.
+
+    One UPDATE with the limit in its WHERE, like the simulation quota (api/simulation._reserve_quota): two
+    builds at the same time do not lose an increment nor go over the limit. A counter of an earlier period
+    starts again from 1. False when the limit is reached (or is 0)."""
+    from sqlalchemy import and_, case, func, or_, update
+    from app.models import Subscription
+    from app.models.usage_period import to_db
+
+    limit = int(current_app.config.get("GRAPH_SYSTEM_KEY_MONTHLY_LIMIT", 20))
+    if limit == 0:
+        return False
+    period = to_db(sub.usage_period_start())
+    used = func.coalesce(Subscription.graph_system_builds_used, 0)
+    same_period = and_(Subscription.graph_system_builds_period.isnot(None),
+                       Subscription.graph_system_builds_period >= period)
+    stmt = (update(Subscription).where(Subscription.id == sub.id)
+            .values(graph_system_builds_used=case((same_period, used + 1), else_=1),
+                    graph_system_builds_period=period)
+            .execution_options(synchronize_session=False))
+    if limit > 0:
+        stmt = stmt.where(or_(~same_period, used < limit))
+    reserved = db.session.execute(stmt).rowcount == 1
+    db.session.expire(sub, ["graph_system_builds_used", "graph_system_builds_period"])
+    return reserved
+
+
+def _release_system_graph_build(sub) -> None:
+    """Gives back a reserved build whose task could not be queued."""
+    from sqlalchemy import case, func, update
+    from app.models import Subscription
+    used = func.coalesce(Subscription.graph_system_builds_used, 0)
+    db.session.execute(update(Subscription).where(Subscription.id == sub.id)
+                       .values(graph_system_builds_used=case((used > 0, used - 1), else_=0))
+                       .execution_options(synchronize_session=False))
+    db.session.expire(sub, ["graph_system_builds_used"])
+
+
+def _system_graph_limit_error():
+    limit = int(current_app.config.get("GRAPH_SYSTEM_KEY_MONTHLY_LIMIT", 20))
+    return jsonify({"error": api_error("graph_system_key_limit", limit=limit),
+                    "code": "graph_system_key_limit"}), 403
 
 
 @graph_bp.post("/upload")
@@ -89,6 +152,16 @@ def upload_document():
         if llm_provider and llm_provider != cred.provider:
             return jsonify({"error": api_error("provider_mismatch")}), 400
         llm_provider = cred.provider
+    else:
+        # No credential chosen: the user's own key if there is one, the system key only within its limit
+        models = {"heavy": model_heavy, "agent": model_agent, "fast": model_fast}
+        llm_provider, llm_credential_id, models = _use_own_credential(user.id, llm_provider, models)
+        model_heavy, model_agent, model_fast = models["heavy"], models["agent"], models["fast"]
+    from app.core.llm_router import system_key_configured
+    if not llm_credential_id and system_key_configured() and not _reserve_system_graph_build(sub):
+        db.session.rollback()
+        shutil.rmtree(upload_dir, ignore_errors=True)
+        return _system_graph_limit_error()
 
     # Salva progetto nel DB
     project = Project(
@@ -201,6 +274,26 @@ def rebuild_graph(project_id: str):
     if not project.source_file_path or not os.path.exists(project.source_file_path):
         return jsonify({"error": api_error("source_missing")}), 400
 
+    # The build uses the project's credential if still active, else the user's own key, else the system key
+    # within its monthly limit
+    from app.core.llm_router import system_key_configured
+    from app.models import LLMCredential
+    has_credential = bool(project.llm_provider and project.llm_credential_id and LLMCredential.query.filter_by(
+        id=project.llm_credential_id, user_id=user.id, is_active=True).first())
+    on_system_key = False
+    if not has_credential:
+        models = {"heavy": project.model_heavy, "agent": project.model_agent, "fast": project.model_fast}
+        provider, credential_id, models = _use_own_credential(user.id, project.llm_provider, models)
+        if credential_id:
+            project.llm_provider, project.llm_credential_id = provider, credential_id
+            project.model_heavy, project.model_agent, project.model_fast = (
+                models["heavy"], models["agent"], models["fast"])
+        elif system_key_configured():
+            if not user.subscription or not _reserve_system_graph_build(user.subscription):
+                db.session.rollback()
+                return _system_graph_limit_error()
+            on_system_key = True
+
     store = _store()
     had_graph = store.set_aside_graph(project_id)
     was_built, old_error, old_detail = project.graph_built, project.graph_error, project.graph_error_detail
@@ -217,6 +310,8 @@ def rebuild_graph(project_id: str):
         if had_graph:
             store.restore_previous_graph(project_id)
         project.graph_built, project.graph_error, project.graph_error_detail = was_built, old_error, old_detail
+        if on_system_key:
+            _release_system_graph_build(user.subscription)
         db.session.commit()
         current_app.logger.exception("graph_rebuild_enqueue_failed")
         return jsonify({"error": api_error("rebuild_unavailable")}), 503

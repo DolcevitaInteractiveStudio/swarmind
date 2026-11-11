@@ -67,6 +67,9 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "").strip() or _derived_secret_key(_ENCRYPTION_KEY)
 
     GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+    # Graph builds per user and per month on the system key (GROQ_API_KEY), for users with no provider key of
+    # their own: with one, the build always uses it. -1 no limit, 0 never on the system key
+    GRAPH_SYSTEM_KEY_MONTHLY_LIMIT = int(os.environ.get("GRAPH_SYSTEM_KEY_MONTHLY_LIMIT", "20"))
     GROQ_MODEL_HEAVY = os.environ.get("GROQ_MODEL_HEAVY", "llama-3.3-70b-versatile")
     GROQ_MODEL_AGENT = os.environ.get("GROQ_MODEL_AGENT", "openai/gpt-oss-20b")
     GROQ_MODEL_FAST  = os.environ.get("GROQ_MODEL_FAST",  "llama-3.1-8b-instant")

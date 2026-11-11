@@ -481,6 +481,7 @@ errors:
   plan_excludes_provider: "Your plan does not include the provider {provider}"
   # graph / projects
   project_limit: "Project limit reached ({max}). Upgrade your plan."
+  graph_system_key_limit: "You have used the {limit} graph builds per month available on the shared system key. Add your own provider key in AI connections to build more."
   no_file: "No file uploaded"
   unsupported_format: "Unsupported format. Use: {formats}"
   file_too_large: "File too large ({size} MB). Limit: {max} MB"

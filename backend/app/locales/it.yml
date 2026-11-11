@@ -481,6 +481,7 @@ errors:
   plan_excludes_provider: "Il tuo piano non include il provider {provider}"
   # graph / progetti
   project_limit: "Limite progetti raggiunto ({max}). Aggiorna il piano."
+  graph_system_key_limit: "Hai usato le {limit} costruzioni del grafo al mese disponibili con la chiave di sistema condivisa. Aggiungi una tua chiave in Connessioni AI per costruirne altre."
   no_file: "Nessun file caricato"
   unsupported_format: "Formato non supportato. Usa: {formats}"
   file_too_large: "File troppo grande ({size} MB). Limite: {max} MB"

@@ -106,6 +106,10 @@ class Subscription(db.Model):
     # Contatori uso corrente (reset ogni mese)
     simulations_used_this_month = db.Column(db.Integer, default=0)
     usage_reset_at = db.Column(db.DateTime, nullable=True)
+    # Graph builds on the shared system key in the quota period that starts at graph_system_builds_period
+    # (GRAPH_SYSTEM_KEY_MONTHLY_LIMIT, api/graph.py). An older period counts as zero
+    graph_system_builds_used = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+    graph_system_builds_period = db.Column(db.DateTime, nullable=True)
 
     user = db.relationship("User", back_populates="subscription")
     plan = db.relationship("Plan", back_populates="subscriptions")
