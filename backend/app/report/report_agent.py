@@ -194,6 +194,16 @@ ANALYTICAL BIAS RULES — APPLY TO EVERY REPORT
     configuration keys (names with underscores), sampling methods or how the system chose the agents: the
     system states those facts itself in the {H_APPENDIX}.
 
+24. COMPLETE SENTENCES. Every sentence and every bullet is a grammatically complete sentence with a main
+    clause. A conditional always has its consequence: never "If the price drops below the competitors'." alone,
+    write "If the price drops below the competitors', it is plausible that the objection weakens.". Never end a
+    bullet on a subordinate clause, a colon or a dangling "and"/"or"; never leave a sentence half-written.
+
+25. LISTS OF AGENTS. Name each agent with the name first, then the role in brackets: "Giulia Ferri (freelance
+    designer)". Join the items correctly for the language: "A (role), B (role) and C (role)", with commas
+    between the items and the conjunction only before the last one; never a role without its agent, never
+    two roles in a row, never an agent name repeated in the same list.
+
 REPORT VOCABULARY (field or value → label to write)
 {VOCABULARY}
 
