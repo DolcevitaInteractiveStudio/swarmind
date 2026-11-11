@@ -31,7 +31,7 @@ distro==1.9.0
 durationpy==0.10
 filelock==3.29.0
 Flask==3.0.3
-Flask-Cors==4.0.1
+Flask-Cors==6.0.5
 Flask-Migrate==4.0.7
 Flask-SocketIO==5.3.6
 Flask-SQLAlchemy==3.1.1
@@ -119,7 +119,6 @@ simple-websocket==1.1.0
 six==1.17.0
 sniffio==1.3.1
 SQLAlchemy==2.0.31
-stripe==10.1.0
 structlog==24.2.0
 sympy==1.14.0
 tenacity==8.3.0
