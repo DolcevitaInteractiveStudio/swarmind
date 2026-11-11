@@ -204,7 +204,8 @@ report:
     not_specified: "not specified"
   # Share of the published posts written by the top 3 influencers, computed by the system (appendix)
   top3:
-    share: "The top 3 account for {top_pct} of the posts published ({top_posts} of {total_posts}); the remaining {rest_pct} comes from the agents not quoted."
+    share: "The 3 most active natural agents account for {top_pct} of the posts published ({top_posts} of {total_posts}); the remaining {rest_pct} comes from the agents not quoted."
+    share_with_critical: "The 3 most active natural agents account for {top_pct} of the posts published ({top_posts} of {total_posts}); the critical voices published {critical_posts} ({critical_pct}), at a frequency set by the system; the remaining {rest_pct} comes from the other natural agents."
     unknown: "The share of posts written by the top 3 is not available for this simulation."
   # Rewording of "consensus" in the model's text (postprocess.fix_consensus_wording)
   consensus_rewording:
@@ -305,7 +306,7 @@ report:
     {parameters}
 
     **Selection criteria for the agents quoted:**
-    The top 3 influencers are selected by number of posts published. The other agents contribute to the metrics (stance, conviction, entropy) but are not quoted individually in the report. {top3_sentence}
+    The top 3 influencers are the natural agents with the most posts published: critical voices are not ranked, because the system sets how often they speak. The other agents contribute to the metrics (stance, conviction, entropy) but are not quoted individually in the report. {top3_sentence}
 
     **Critical voices:**
     Critical voices are agents the system deliberately added to stress-test the prevailing positions. They do not represent a natural market distribution: their presence amplifies criticism to surface vulnerabilities.

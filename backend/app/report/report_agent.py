@@ -248,7 +248,9 @@ Describe the STANCE distribution (support / neutral / oppose; natural agents and
 separately) from compute_consensus, then how CONVICTION is distributed (the conviction buckets of
 get_opinion_distribution, exact percentages): conviction, never approval (rule 12). Report
 emotional_state counts only as tone.
-Name the top 3 influencers with their actual post counts from get_top_influencers.
+Name the top 3 influencers with their actual post counts from get_top_influencers.top_influencers (natural
+agents only). Never rank or call a critical voice an influencer: its post count is set by the system and goes
+in {H_PERSPECTIVES}.
 
 ## {H_NARRATIVES}
 List the top topics from get_emerging_topics with their actual counts. A topic can be a phrase of
@@ -265,7 +267,9 @@ present, treat them as stress-test signals: ALWAYS report the objections they
 raised and the vulnerability each one exposes, labelled as coming from
 deliberately injected critics. Their post volume is set by the system (the
 share is in the {H_APPENDIX}), so do NOT use it to say how widespread
-a criticism is. Weigh an objection by how specific it is and by whether natural
+a criticism is. List each critical voice with its post count from
+get_top_influencers.critical_voices (name, then role in brackets), saying that
+the system sets how often these voices post. Weigh an objection by how specific it is and by whether natural
 agents raise it too, and state which of the two applies.
 
 MANDATORY DISCLOSURE ON ADVERSARIAL AGENTS: If any adversarial agents were
@@ -306,13 +310,19 @@ Add this final section VERBATIM (adapt only the bracketed values from OBSERVATIO
 
 # ---------------------------------------------------------------------------
 def top3_share(state) -> dict | None:
-    """Quota dei post pubblicati scritta dai 3 agenti con piu' post: {"share", "top_posts", "total_posts"}."""
+    """Quota dei post pubblicati scritta dai 3 agenti NATURALI con piu' post, e a parte i post delle voci critiche:
+    quante volte intervengono lo decide il sistema, quindi non sono influencer.
+    {"share", "top_posts", "total_posts", "critical_posts", "critical_share", "rest_share"}."""
     total = run_post_totals(state)["posts"]
-    posts = sorted((int(_agent_field(a, "posts_made", 0) or 0) for a in state.agents), reverse=True)
-    top = sum(posts[:3])
+    natural = sorted((int(_agent_field(a, "posts_made", 0) or 0) for a in state.agents if not _is_adversarial(a)),
+                     reverse=True)
+    top = sum(natural[:3])
     if not total or not top or top > total:
         return None
-    return {"share": top / total, "top_posts": top, "total_posts": total}
+    critical = min(total - top, sum(int(_agent_field(a, "posts_made", 0) or 0)
+                                    for a in state.agents if _is_adversarial(a)))
+    return {"share": top / total, "top_posts": top, "total_posts": total, "critical_posts": critical,
+            "critical_share": critical / total, "rest_share": (total - top - critical) / total}
 
 
 def run_post_totals(state) -> dict:
@@ -542,8 +552,12 @@ class ReportAgent:
         """L'appendice metodologica che il modello copia: testo del catalogo con i valori del run (la quota dei
         top 3 la calcola il sistema: prima il catalogo aveva un esempio, 37.5%, che il modello svuotava)."""
         if top3:
-            top3_sentence = t(lang, "report.top3.share", top_pct=postprocess.fmt_pct(top3["share"], 1, lang),
-                              rest_pct=postprocess.fmt_pct(1 - top3["share"], 1, lang),
+            top3_sentence = t(lang, "report.top3.share_with_critical" if top3.get("critical_posts")
+                              else "report.top3.share",
+                              top_pct=postprocess.fmt_pct(top3["share"], 1, lang),
+                              rest_pct=postprocess.fmt_pct(top3.get("rest_share", 1 - top3["share"]), 1, lang),
+                              critical_pct=postprocess.fmt_pct(top3.get("critical_share", 0), 1, lang),
+                              critical_posts=top3.get("critical_posts", 0),
                               top_posts=top3["top_posts"], total_posts=top3["total_posts"])
         else:
             top3_sentence = t(lang, "report.top3.unknown")
@@ -1426,7 +1440,8 @@ class SimulationToolExecutor:
         top3 = top3_share(self._state)
         if top3:
             values.update({round(top3["share"] * 100, 1), round((1 - top3["share"]) * 100, 1),
-                           float(top3["top_posts"]), float(top3["total_posts"])})
+                           round(top3["critical_share"] * 100, 1), round(top3["rest_share"] * 100, 1),
+                           float(top3["top_posts"]), float(top3["total_posts"]), float(top3["critical_posts"])})
 
         def add(v):
             if isinstance(v, (int, float)) and not isinstance(v, bool):
@@ -1584,7 +1599,9 @@ class SimulationToolExecutor:
                       "compute_consensus: conviction buckets and tones are not stance",
         }
 
-    def _get_top_influencers(self, n: int) -> list[dict]:
+    def _get_top_influencers(self, n: int) -> dict:
+        """The natural agents with the most posts. Critical voices are never ranked: the system sets how often
+        they post. Their post counts come apart, in critical_voices."""
         def _posts(a):
             return a.get("posts_made", 0) if isinstance(a, dict) else a.posts_made
 
@@ -1599,21 +1616,31 @@ class SimulationToolExecutor:
                 return a.get("role") or a.get("persona", {}).get("role", "") or ""
             return a.persona.role if hasattr(a, "persona") else ""
 
-        ranked = sorted(self._state.agents, key=_posts, reverse=True)
-        return [
-            {
-                "agent_id": _agent_field(a, "agent_id", ""),
-                "name": _get_name(a),
-                "role": _get_role(a),
-                "is_adversarial": _is_adversarial(a),
-                "posts": _posts(a),
-                "opinion_strength": a.get("opinion_strength", 0.5) if isinstance(a, dict) else a.opinion_strength,
-                "emotional_state": a.get("emotional_state", "") if isinstance(a, dict) else a.emotional_state,
-                "emotional_state_label": emotion_label(self._lang, _agent_field(a, "emotional_state", "")),
-                **self._stance_of(a),
-            }
-            for a in ranked[:n]
-        ]
+        natural = sorted((a for a in self._state.agents if not _is_adversarial(a)), key=_posts, reverse=True)
+        critical = sorted((a for a in self._state.agents if _is_adversarial(a)), key=_posts, reverse=True)
+        return {
+            "top_influencers": [
+                {
+                    "agent_id": _agent_field(a, "agent_id", ""),
+                    "name": _get_name(a),
+                    "role": _get_role(a),
+                    "posts": _posts(a),
+                    "opinion_strength": a.get("opinion_strength", 0.5) if isinstance(a, dict) else a.opinion_strength,
+                    "emotional_state": a.get("emotional_state", "") if isinstance(a, dict) else a.emotional_state,
+                    "emotional_state_label": emotion_label(self._lang, _agent_field(a, "emotional_state", "")),
+                    **self._stance_of(a),
+                }
+                for a in natural[:n]
+            ],
+            "critical_voices": [
+                {"agent_id": _agent_field(a, "agent_id", ""), "name": _get_name(a), "role": _get_role(a),
+                 "posts": _posts(a)}
+                for a in critical
+            ],
+            "note": ("top_influencers ranks natural agents only. The system sets how often critical voices post: "
+                     "give their post counts apart, where the report discusses the critical voices, and never "
+                     "call a critical voice an influencer."),
+        }
 
     # Stopword set (italiane + inglesi) usate per topic extraction
     REPORT_STOPWORDS = {

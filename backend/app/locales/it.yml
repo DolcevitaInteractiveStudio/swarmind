@@ -204,7 +204,8 @@ report:
     not_specified: "non specificata"
   # Quota dei post pubblicati dai top 3 influencer, calcolata dal sistema (appendice)
   top3:
-    share: "I top 3 hanno pubblicato il {top_pct} dei post ({top_posts} su {total_posts}); il restante {rest_pct} viene dagli agenti non citati."
+    share: "I 3 agenti naturali più attivi hanno pubblicato il {top_pct} dei post ({top_posts} su {total_posts}); il restante {rest_pct} viene dagli agenti non citati."
+    share_with_critical: "I 3 agenti naturali più attivi hanno pubblicato il {top_pct} dei post ({top_posts} su {total_posts}); le voci critiche ne hanno pubblicati {critical_posts} ({critical_pct}), con una frequenza stabilita dal sistema; il restante {rest_pct} viene dagli altri agenti naturali."
     unknown: "La quota di post dei top 3 non è disponibile per questa simulazione."
   # Riscrittura di "consenso" nel testo del modello (postprocess.fix_consensus_wording)
   consensus_rewording:
@@ -305,7 +306,7 @@ report:
     {parameters}
 
     **Criteri di selezione degli agenti citati:**
-    I top 3 influencer sono selezionati per volume di post pubblicati. Gli altri agenti partecipano al calcolo delle metriche (posizione, convinzione, entropia) ma non sono citati individualmente nel report. {top3_sentence}
+    I top 3 influencer sono gli agenti naturali con più post pubblicati: le voci critiche non entrano nella classifica, perché quante volte intervengono lo stabilisce il sistema. Gli altri agenti partecipano al calcolo delle metriche (posizione, convinzione, entropia) ma non sono citati individualmente nel report. {top3_sentence}
 
     **Voci critiche:**
     Le voci critiche sono agenti inseriti deliberatamente dal sistema per mettere alla prova le posizioni prevalenti. Non rappresentano una distribuzione di mercato naturale: la loro presenza amplifica le critiche per far emergere le vulnerabilità.
