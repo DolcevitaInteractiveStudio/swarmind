@@ -103,14 +103,19 @@
     "up_to_agents": "Fino a {n} agenti",
     "max_rounds": "{n} round massimi",
     "current_plan": "Piano attuale",
-    "choose": "Scegli",
     "get_started": "Inizia",
     "features": {
-      "can_use_custom_api_keys": "Chiavi API personalizzate",
-      "can_export_report": "Esporta report",
-      "can_chat_with_agents": "Chat con agenti simulati",
+      "custom_api_keys": "Chiavi API personali",
+      "export_report": "Esportazione del report",
+      "chat_with_agents": "Chat con gli agenti simulati",
       "priority_queue": "Coda prioritaria"
-    }
+    },
+    "loading": "Caricamento dei piani…",
+    "empty": "Nessun piano disponibile al momento.",
+    "highest_plan": "Hai già il piano più alto.",
+    "contact_to_change": "Contattaci per cambiare piano",
+    "ask_admin": "Chiedi all'amministratore di cambiare piano.",
+    "mail_subject": "Cambio di piano: {plan}"
   },
   "profile": {
     "title": "Profilo",
@@ -122,7 +127,9 @@
   "billing": {
     "title": "Piano e fatturazione",
     "usage": "{used} / {max} simulazioni usate questo mese",
-    "note": "Per cambiare piano o gestire la fatturazione, contatta il supporto o aggiorna dalla pagina prezzi."
+    "note": "Non c'è un pagamento online: i piani li cambia l'amministratore.",
+    "see_plans": "Vedi i piani",
+    "contact_to_change": "Contattaci per cambiare piano"
   },
   "dashboard": {
     "hello": "Ciao",
@@ -285,7 +292,8 @@
       "comments": "Commenti",
       "announcements": "Annunci",
       "empty": "Nessun post ancora.",
-      "load_more": "Carica altri"
+      "load_more": "Carica altri",
+      "saved_note": "Ultimi {saved} post su {total}: il feed conserva solo i post più recenti."
     },
     "metrics": {
       "empty": "Nessuna metrica disponibile.",

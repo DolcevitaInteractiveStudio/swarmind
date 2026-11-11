@@ -68,6 +68,7 @@ class Plan(db.Model):
             "id": self.id,
             "name": self.name,
             "tier": self.tier.value,
+            "is_active": self.is_active is not False,
             "price_monthly": self.price_monthly,
             "price_yearly": self.price_yearly,
             "limits": {

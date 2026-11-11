@@ -111,7 +111,7 @@ description. If segment is in Italian, produce Italian. If in English, English."
 _LANGUAGE_RULE_SIMULATION = """LANGUAGE: produce ALL human-readable text in the language given by the final
 instruction of the user message, even when the segment description is in another language."""
 # Example of a template phrase, in the language the personas write in
-_TEMPLATE_PHRASES = {"it": '"secondo me e\' un errore"', "en": '"in my opinion it is a mistake"'}
+_TEMPLATE_PHRASES = {"it": '"secondo me è un errore"', "en": '"in my opinion it is a mistake"'}
 
 
 def persona_generator_system(language: str | None, phrase_language: str) -> str:

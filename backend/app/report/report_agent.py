@@ -28,6 +28,7 @@ from ..core.i18n import DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES, normalize_languag
 from ..core.llm import get_llm
 from ..population.integration import render_subject_card
 from ..simulation.engine import SimulationState
+from ..utils.excerpt import trim_excerpt
 from . import postprocess
 from .sections import ALWAYS_SECTIONS, SECTION_DESCRIPTIONS, section_title
 from .metrics import compute_all_debate_metrics
@@ -187,6 +188,22 @@ ANALYTICAL BIAS RULES — APPLY TO EVERY REPORT
 22. ROLES. When you name an agent together with a role, use that agent's own role (get_top_influencers,
     interview_agent): never another agent's role.
 
+23. NO INTERNAL NAMES. Write only about the agents that took part in this run. Never mention a critical
+    voice or an archetype that is not in the ADVERSARIAL AGENTS block, and never write that a voice, a role
+    or an archetype "was not present", "was missing" or "did not take part". Never write template ids,
+    configuration keys (names with underscores), sampling methods or how the system chose the agents: the
+    system states those facts itself in the {H_APPENDIX}.
+
+24. COMPLETE SENTENCES. Every sentence and every bullet is a grammatically complete sentence with a main
+    clause. A conditional always has its consequence: never "If the price drops below the competitors'." alone,
+    write "If the price drops below the competitors', it is plausible that the objection weakens.". Never end a
+    bullet on a subordinate clause, a colon or a dangling "and"/"or"; never leave a sentence half-written.
+
+25. LISTS OF AGENTS. Name each agent with the name first, then the role in brackets: "Giulia Ferri (freelance
+    designer)". Join the items correctly for the language: "A (role), B (role) and C (role)", with commas
+    between the items and the conjunction only before the last one; never a role without its agent, never
+    two roles in a row, never an agent name repeated in the same list.
+
 REPORT VOCABULARY (field or value → label to write)
 {VOCABULARY}
 
@@ -241,7 +258,9 @@ Describe the STANCE distribution (support / neutral / oppose; natural agents and
 separately) from compute_consensus, then how CONVICTION is distributed (the conviction buckets of
 get_opinion_distribution, exact percentages): conviction, never approval (rule 12). Report
 emotional_state counts only as tone.
-Name the top 3 influencers with their actual post counts from get_top_influencers.
+Name the top 3 influencers with their actual post counts from get_top_influencers.top_influencers (natural
+agents only). Never rank or call a critical voice an influencer: its post count is set by the system and goes
+in {H_PERSPECTIVES}.
 
 ## {H_NARRATIVES}
 List the top topics from get_emerging_topics with their actual counts. A topic can be a phrase of
@@ -258,7 +277,9 @@ present, treat them as stress-test signals: ALWAYS report the objections they
 raised and the vulnerability each one exposes, labelled as coming from
 deliberately injected critics. Their post volume is set by the system (the
 share is in the {H_APPENDIX}), so do NOT use it to say how widespread
-a criticism is. Weigh an objection by how specific it is and by whether natural
+a criticism is. List each critical voice with its post count from
+get_top_influencers.critical_voices (name, then role in brackets), saying that
+the system sets how often these voices post. Weigh an objection by how specific it is and by whether natural
 agents raise it too, and state which of the two applies.
 
 MANDATORY DISCLOSURE ON ADVERSARIAL AGENTS: If any adversarial agents were
@@ -299,13 +320,19 @@ Add this final section VERBATIM (adapt only the bracketed values from OBSERVATIO
 
 # ---------------------------------------------------------------------------
 def top3_share(state) -> dict | None:
-    """Quota dei post pubblicati scritta dai 3 agenti con piu' post: {"share", "top_posts", "total_posts"}."""
+    """Quota dei post pubblicati scritta dai 3 agenti NATURALI con piu' post, e a parte i post delle voci critiche:
+    quante volte intervengono lo decide il sistema, quindi non sono influencer.
+    {"share", "top_posts", "total_posts", "critical_posts", "critical_share", "rest_share"}."""
     total = run_post_totals(state)["posts"]
-    posts = sorted((int(_agent_field(a, "posts_made", 0) or 0) for a in state.agents), reverse=True)
-    top = sum(posts[:3])
+    natural = sorted((int(_agent_field(a, "posts_made", 0) or 0) for a in state.agents if not _is_adversarial(a)),
+                     reverse=True)
+    top = sum(natural[:3])
     if not total or not top or top > total:
         return None
-    return {"share": top / total, "top_posts": top, "total_posts": total}
+    critical = min(total - top, sum(int(_agent_field(a, "posts_made", 0) or 0)
+                                    for a in state.agents if _is_adversarial(a)))
+    return {"share": top / total, "top_posts": top, "total_posts": total, "critical_posts": critical,
+            "critical_share": critical / total, "rest_share": (total - top - critical) / total}
 
 
 def run_post_totals(state) -> dict:
@@ -461,7 +488,6 @@ CONFIDENCE LEVEL (pre-computed, deterministic: use it as is, never override it)
 ════════════════════════════════════════
 {confidence_block}
 
-{adversarial_truncation_note}
 ════════════════════════════════════════
 POPULATION COMPOSITION (from Demographer, persona-pipeline)
 ════════════════════════════════════════
@@ -512,11 +538,6 @@ class ReportAgent:
         self.max_reflection_rounds = max_reflection_rounds
         self.temperature = temperature
 
-    @staticmethod
-    def _adversarial_share_disclosure(stats: dict | None, lang: str = DEFAULT_LANGUAGE) -> str:
-        """Frase per l'appendice con la quota reale di post adversarial, calcolata a fine run."""
-        return postprocess.adversarial_share_sentence(stats, lang)
-
     @classmethod
     def _ensure_share_disclosure(cls, report: str, disclosure: str) -> str:
         """La frase sulla quota e' del codice: le varianti del modello si tolgono, resta solo quella esatta."""
@@ -541,8 +562,12 @@ class ReportAgent:
         """L'appendice metodologica che il modello copia: testo del catalogo con i valori del run (la quota dei
         top 3 la calcola il sistema: prima il catalogo aveva un esempio, 37.5%, che il modello svuotava)."""
         if top3:
-            top3_sentence = t(lang, "report.top3.share", top_pct=postprocess.fmt_pct(top3["share"], 1, lang),
-                              rest_pct=postprocess.fmt_pct(1 - top3["share"], 1, lang),
+            top3_sentence = t(lang, "report.top3.share_with_critical" if top3.get("critical_posts")
+                              else "report.top3.share",
+                              top_pct=postprocess.fmt_pct(top3["share"], 1, lang),
+                              rest_pct=postprocess.fmt_pct(top3.get("rest_share", 1 - top3["share"]), 1, lang),
+                              critical_pct=postprocess.fmt_pct(top3.get("critical_share", 0), 1, lang),
+                              critical_posts=top3.get("critical_posts", 0),
                               top_posts=top3["top_posts"], total_posts=top3["total_posts"])
         else:
             top3_sentence = t(lang, "report.top3.unknown")
@@ -721,35 +746,12 @@ class ReportAgent:
             debate_metrics = {}
             debate_metrics_block = "(metrics not available for this simulation)"
 
-        # Patch 3: nota soft sul troncamento adversari (max_adversarial_share)
-        adversarial_truncation_note = ""
-        try:
-            from app.utils.state_store import StateStore
-            from app.config import Config
-            _store = StateStore(Config.SIMULATIONS_DIR)
-            meta = _store.load_meta(state.simulation_id) or {}
-            trunc = meta.get("adversarial_truncation")
-            if trunc:
-                adversarial_truncation_note = (
-                    f"════════════════════════════════════════\n"
-                    f"ADVERSARIAL TRUNCATION NOTICE (pre-computed)\n"
-                    f"════════════════════════════════════════\n"
-                    f"Adversarial agents originally specified: {trunc.get('original_count')}. "
-                    f"Kept after the max_adversarial_share={trunc.get('max_share')} constraint: "
-                    f"{trunc.get('kept_count')}. Selection: {trunc.get('method')}.\n"
-                    f"INCLUDE this information as an additional disclosure in the "
-                    f"{t(language, 'report.headings.appendix')}, under "
-                    f"'{t(language, 'report.adversarial_note_heading').strip('*: ')}', as a separate "
-                    f"paragraph explaining: the number of simulated adversarial agents was capped "
-                    f"to avoid a structural criticism bias; some adversarial voices originally "
-                    f"proposed were excluded by random sampling.\n"
-                )
-                log.info("adversarial_truncation_in_report",
-                         simulation_id=state.simulation_id,
-                         original=trunc.get("original_count"),
-                         kept=trunc.get("kept_count"))
-        except Exception as trunc_err:
-            log.debug("adversarial_truncation_load_failed", error=str(trunc_err))
+        # Critical voices left out by the cap on agents (spawn): stated by the code in the appendix, in plain
+        # language. The model is not told about them: it wrote that the excluded voices "were not present"
+        trunc, agent_cap = self._critical_voices_meta(state.simulation_id)
+        if trunc:
+            log.info("adversarial_truncation_in_report", simulation_id=state.simulation_id,
+                     original=trunc.get("original_count"), kept=trunc.get("kept_count"))
 
         # Prima alcuni adversari, poi i naturali, fino a max 12
         def _is_adv(a):
@@ -772,10 +774,21 @@ class ReportAgent:
         # Carica template della simulazione (se presente) per sezioni dinamiche + istruzioni extra
         dynamic_sections_md, extra_instructions, template_id = self._load_template_metadata(
             state.simulation_id, language)
-        share_disclosure = self._adversarial_share_disclosure(adversarial_post_stats, language)
+        template_info = self._template_info(template_id, language)
+        # Archetypes of the template that are not in the run (left out by the cap on agents): the instructions
+        # never name them, and the report never mentions them
+        run_names = {str(_agent_field(a, "name", "") or "").strip().lower() for a in adv_agents}
+        absent_names = [n for n in template_info["persona_names"] if n.strip().lower() not in run_names]
+        absent_names += [n for n in (trunc or {}).get("excluded") or [] if n and n.strip().lower() not in run_names]
+        extra_instructions = postprocess.drop_names(extra_instructions, absent_names)
+        if agent_cap is None:
+            agent_cap = template_info["agent_cap"]
+        internal_terms = [*postprocess.INTERNAL_KEYS, *template_info["all_ids"], *absent_names]
+        share_disclosure = postprocess.critical_voices_disclosure(
+            adversarial_post_stats, language, agent_cap=agent_cap if adversarial_count else None, truncation=trunc)
         # Parametri dell'appendice dai dati salvati della simulazione: righe del codice, mai scritte dal modello
         appendix_parameters = postprocess.appendix_parameters({
-            "template": template_id or t(language, "report.template_none"), "agents": len(state.agents),
+            "template": template_info["name"] or t(language, "report.template_none"), "agents": len(state.agents),
             "rounds": state.current_round, "topic": state.topic, "question": prediction_requirement,
         }, language)
         archetypes_limitation = self._archetypes_limitation(template_id, population_spec, language)
@@ -802,7 +815,6 @@ class ReportAgent:
                     adversarial_block=adversarial_block,
                     debate_metrics_block=debate_metrics_block,
                     confidence_block=postprocess.confidence_prompt_block(confidence),
-                    adversarial_truncation_note=adversarial_truncation_note,
                     population_block=self._format_population_block(population_spec, adversarial_names, language),
                 ), language),
             },
@@ -932,6 +944,9 @@ class ReportAgent:
             agent_roles={str(_agent_field(a, "name", "") or ""): str(_agent_field(a, "role", "") or "")
                          for a in state.agents},
             appendix_parameters=appendix_parameters,
+            internal_terms=internal_terms,
+            enthusiasm=(sum(str(_agent_field(a, "emotional_state", "") or "").lower()
+                            in postprocess.ENTHUSIASTIC_STATES for a in nat_agents), len(nat_agents)),
             lang=language,
             stance=stance,
             population={"agents": len(state.agents), "natural": len(nat_agents),
@@ -998,7 +1013,9 @@ class ReportAgent:
                          lang: str = DEFAULT_LANGUAGE, metrics_table: str | None = None,
                          natural_names: list[str] | None = None, stance: dict | None = None,
                          agent_roles: dict[str, str] | None = None, appendix_parameters: str | None = None,
-                         claims: dict | None = None, population: dict | None = None) -> str:
+                         claims: dict | None = None, population: dict | None = None,
+                         internal_terms: list[str] | None = None,
+                         enthusiasm: tuple[int, int] | None = None) -> str:
         """Le parti del report che appartengono al codice, applicate dopo la risposta del modello.
 
         Ordine (ogni passo lavora sul testo lasciato dai precedenti; nessuno deve creare input che un passo
@@ -1008,15 +1025,18 @@ class ReportAgent:
           3. confidenza ed entropia: livello, valore e lettura calcolati (le frasi sulle soglie restano);
           4. nomi dei campi -> parole del lettore (i controlli seguenti leggono le parole del lettore);
           5. frasi del modello sbagliate per significato: agenti adversarial, convinzione letta come
-             approvazione, "consenso" solo per la posizione, soglie di consenso sbagliate, posizioni ricavate
-             dalla convinzione;
+             approvazione, "consenso" solo per la posizione, soglie di consenso sbagliate, entusiasmo
+             collettivo con pochi agenti entusiasti, posizioni ricavate dalla convinzione;
           6. quote di posizione attaccate a un segmento (prima delle quote di popolazione: una quota di
              posizione non deve essere letta come quota di composizione);
           7. quote di composizione della popolazione e conteggi usati come peso (scenari, previsione);
-          8. affermazioni degli agenti (scenari, previsione): solo i numeri che non sono nel brief ne'
-             calcolati dal sistema, dopo che i passi 6-7 hanno finito di cambiare le cifre;
-          9. etichette a meta' frase, riga delle raccomandazioni, riga degli archetipi, quota adversarial;
-         10. controllo finale dei frammenti (repair_text) sul testo completo.
+          8. citazioni tagliate a meta' parola (accorciate all'ultima frase completa o tolte); affermazioni
+             degli agenti (scenari, previsione): solo i numeri che non sono nel brief ne' calcolati dal
+             sistema, dopo che i passi 6-7 hanno finito di cambiare le cifre;
+          9. etichette a meta' frase, riga delle raccomandazioni, riga degli archetipi, nomi interni (chiavi di
+            configurazione, id dei template, archetipi esclusi), paragrafo delle voci critiche;
+         10. controllo finale dei frammenti (repair_text) sul testo completo; per ultimi, i numeri che
+             annunciano un elenco ("tre rischi:") contano le voci rimaste.
         Dopo ogni passo che toglie frasi (5-10), repair_orphan_references ripara o toglie la frase seguente
         se comincia rimandando alla frase tolta ("Questa dispersione, ..."): report_text_repaired.
         """
@@ -1092,6 +1112,12 @@ class ReportAgent:
         for found in thresholds:
             log.warning("report_consensus_threshold_removed", **found)
         report = orphans(before, report)
+        if enthusiasm:
+            before = report
+            report, enthusiasm_fixed = postprocess.fix_enthusiasm_claims(report, *enthusiasm)
+            for found in enthusiasm_fixed:
+                log.warning("report_enthusiasm_claim_fixed", **found)
+            report = orphans(before, report)
         before = report
         report, claims_on_positions = postprocess.fix_position_claims(report, stance, lang)
         for found in claims_on_positions:
@@ -1114,6 +1140,11 @@ class ReportAgent:
                 log.warning("report_population_share_removed", simulation_id=population.get("simulation_id"), **share)
             report = orphans(before, report)
         # 8
+        before = report
+        report, cut_quotes = postprocess.fix_cut_quotes(report, (claims or {}).get("agent_texts"))
+        for found in cut_quotes:
+            log.warning("report_cut_quote_fixed", **found)
+        report = orphans(before, report)
         if claims is not None:
             before = report
             report = cls._mark_claims(report, claims, lang)
@@ -1136,6 +1167,12 @@ class ReportAgent:
                 fixed += n
             if fixed:
                 log.info("report_template_limitation_fixed", lines=fixed)
+        if internal_terms:
+            before = report
+            report, internal = postprocess.strip_internal_names(report, internal_terms)
+            for found in internal:
+                log.warning("report_internal_name_removed", **found)
+            report = orphans(before, report)
         report = cls._ensure_share_disclosure(report, share_disclosure)
         # 10
         before = report
@@ -1147,6 +1184,10 @@ class ReportAgent:
         report, dangling = postprocess.fix_dangling_section_starts(report, lang)
         for found in dangling:
             log.warning("report_text_repaired", **found)
+        # Last: the counts that announce a list ("three risks:") match the items left by the steps above
+        report, counts = postprocess.fix_list_counts(report)
+        for found in counts:
+            log.warning("report_list_count_fixed", **found)
         return report
 
     @staticmethod
@@ -1193,6 +1234,45 @@ class ReportAgent:
                 continue
             md_parts.append(f"## {section_title(sec_name, lang)}\n{sec_def['prompt']}")
         return "\n\n".join(md_parts)
+
+    @staticmethod
+    def _critical_voices_meta(simulation_id: str) -> tuple[dict | None, float | None]:
+        """(truncation of the critical voices at spawn, cap on the share of critical AGENTS) from the saved meta."""
+        try:
+            from app.config import Config
+            from app.utils.state_store import StateStore
+            meta = StateStore(Config.SIMULATIONS_DIR).load_meta(simulation_id) or {}
+        except Exception as meta_err:
+            log.debug("adversarial_truncation_load_failed", error=str(meta_err))
+            return None, None
+        cap = meta.get("adversarial_agent_share_cap")
+        try:
+            cap = float(cap) if cap is not None else None
+        except (TypeError, ValueError):
+            cap = None
+        return meta.get("adversarial_truncation") or None, cap
+
+    @staticmethod
+    def _template_info(template_id: str | None, lang: str) -> dict:
+        """The template as the reader knows it: its name, its critical-voice archetypes and its cap on the share of
+        critical agents; plus every template id, an internal name the report never shows."""
+        info = {"name": None, "persona_names": [], "agent_cap": None, "all_ids": []}
+        try:
+            from app.templates import get_registry
+            registry = get_registry()
+            info["all_ids"] = [tpl["id"] for tpl in registry.list_all(lang)]
+            tpl = registry.get(template_id, lang) if template_id else None
+        except Exception as tpl_err:
+            log.warning("report_template_info_failed", template_id=template_id, error=str(tpl_err))
+            return info
+        if tpl:
+            info["name"] = str(tpl.get("name") or "").strip() or None
+            info["persona_names"] = [str(p.get("name")) for p in tpl.get("adversarial_personas") or [] if p.get("name")]
+            try:
+                info["agent_cap"] = float(tpl.get("max_adversarial_share", 0.15))
+            except (TypeError, ValueError):
+                info["agent_cap"] = 0.15
+        return info
 
     def _load_template_metadata(self, simulation_id: str,
                                 lang: str = DEFAULT_LANGUAGE) -> tuple[str, str, str | None]:
@@ -1275,7 +1355,8 @@ class ReportAgent:
             agent = post.get("author_name") or post.get("agent_name") or post.get("author_id") or post.get("agent_id", "?")
             if adversarial_ids and post.get("author_id") in adversarial_ids:
                 agent += ", critical voice is_adversarial=true"
-            content = post.get("content", "")[:200]
+            # Cut at the end of a sentence or of a word, never mid-word: the report quotes these lines
+            content = trim_excerpt(post.get("content") or "", 200)
             lines.append(f"{i}. [{agent}]: {content}")
         return "\n".join(lines)
 
@@ -1383,7 +1464,8 @@ class SimulationToolExecutor:
         top3 = top3_share(self._state)
         if top3:
             values.update({round(top3["share"] * 100, 1), round((1 - top3["share"]) * 100, 1),
-                           float(top3["top_posts"]), float(top3["total_posts"])})
+                           round(top3["critical_share"] * 100, 1), round(top3["rest_share"] * 100, 1),
+                           float(top3["top_posts"]), float(top3["total_posts"]), float(top3["critical_posts"])})
 
         def add(v):
             if isinstance(v, (int, float)) and not isinstance(v, bool):
@@ -1541,7 +1623,9 @@ class SimulationToolExecutor:
                       "compute_consensus: conviction buckets and tones are not stance",
         }
 
-    def _get_top_influencers(self, n: int) -> list[dict]:
+    def _get_top_influencers(self, n: int) -> dict:
+        """The natural agents with the most posts. Critical voices are never ranked: the system sets how often
+        they post. Their post counts come apart, in critical_voices."""
         def _posts(a):
             return a.get("posts_made", 0) if isinstance(a, dict) else a.posts_made
 
@@ -1556,21 +1640,31 @@ class SimulationToolExecutor:
                 return a.get("role") or a.get("persona", {}).get("role", "") or ""
             return a.persona.role if hasattr(a, "persona") else ""
 
-        ranked = sorted(self._state.agents, key=_posts, reverse=True)
-        return [
-            {
-                "agent_id": _agent_field(a, "agent_id", ""),
-                "name": _get_name(a),
-                "role": _get_role(a),
-                "is_adversarial": _is_adversarial(a),
-                "posts": _posts(a),
-                "opinion_strength": a.get("opinion_strength", 0.5) if isinstance(a, dict) else a.opinion_strength,
-                "emotional_state": a.get("emotional_state", "") if isinstance(a, dict) else a.emotional_state,
-                "emotional_state_label": emotion_label(self._lang, _agent_field(a, "emotional_state", "")),
-                **self._stance_of(a),
-            }
-            for a in ranked[:n]
-        ]
+        natural = sorted((a for a in self._state.agents if not _is_adversarial(a)), key=_posts, reverse=True)
+        critical = sorted((a for a in self._state.agents if _is_adversarial(a)), key=_posts, reverse=True)
+        return {
+            "top_influencers": [
+                {
+                    "agent_id": _agent_field(a, "agent_id", ""),
+                    "name": _get_name(a),
+                    "role": _get_role(a),
+                    "posts": _posts(a),
+                    "opinion_strength": a.get("opinion_strength", 0.5) if isinstance(a, dict) else a.opinion_strength,
+                    "emotional_state": a.get("emotional_state", "") if isinstance(a, dict) else a.emotional_state,
+                    "emotional_state_label": emotion_label(self._lang, _agent_field(a, "emotional_state", "")),
+                    **self._stance_of(a),
+                }
+                for a in natural[:n]
+            ],
+            "critical_voices": [
+                {"agent_id": _agent_field(a, "agent_id", ""), "name": _get_name(a), "role": _get_role(a),
+                 "posts": _posts(a)}
+                for a in critical
+            ],
+            "note": ("top_influencers ranks natural agents only. The system sets how often critical voices post: "
+                     "give their post counts apart, where the report discusses the critical voices, and never "
+                     "call a critical voice an influencer."),
+        }
 
     # Stopword set (italiane + inglesi) usate per topic extraction
     REPORT_STOPWORDS = {

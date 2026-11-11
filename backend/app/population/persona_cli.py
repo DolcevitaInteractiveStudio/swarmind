@@ -75,7 +75,7 @@ def parse_args() -> argparse.Namespace:
         "--domain-context",
         type=str,
         default="",
-        help="Testo opzionale di contesto di dominio (Step 3 lo prendera' dal KG)",
+        help="Testo opzionale di contesto di dominio (Step 3 lo prenderà dal KG)",
     )
     p.add_argument(
         "--language",

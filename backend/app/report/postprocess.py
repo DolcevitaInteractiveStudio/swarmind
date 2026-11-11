@@ -485,7 +485,8 @@ _BOLD_LABEL_LINE = re.compile(r"^\s*\*\*[^*\n]{2,80}\*\*\s*:?\s*$")
 
 _SHARE_LABEL = re.compile(
     r"quota\s+(?:di|dei)\s+post\s+(?:adversarial|avversar\w*)|adversarial\s+post\s+share|"
-    r"share\s+of\s+adversarial\s+posts", re.I)
+    r"share\s+of\s+adversarial\s+posts|quota\s+(?:di|dei)\s+post\s+delle\s+voci\s+critiche|"
+    r"share\s+of\s+posts\s+(?:by|from)\s+(?:the\s+)?critical\s+voices", re.I)
 _ADV_WORD = re.compile(r"advers|avversar", re.I)
 _POST_WORD = re.compile(r"\bposts?\b", re.I)
 _SHARE_FIGURE = re.compile(r"\d+(?:[.,]\d+)?\s*%|\b\d+\s+(?:post\s+)?(?:su|of|out\s+of)\s+\d+\b", re.I)
@@ -508,6 +509,106 @@ def adversarial_share_sentence(stats: dict | None, lang: str = DEFAULT_LANGUAGE)
         total_agents=stats["total_agents"],
         cap=fmt_pct(stats["cap"], 1, lang),
     )
+
+
+def _cap_pct(value: float, lang: str) -> str:
+    """15%, 12,5%: senza decimali quando il tetto e' un numero intero di punti."""
+    pct = float(value) * 100
+    return fmt_pct(value, 0 if abs(pct - round(pct)) < 1e-9 else 1, lang)
+
+
+def critical_voices_disclosure(stats: dict | None, lang: str = DEFAULT_LANGUAGE, *,
+                               agent_cap: float | None = None, truncation: dict | None = None) -> str:
+    """Le frasi del codice nel paragrafo "Voci critiche" dell'appendice, in parole del lettore: la quota di
+    post delle voci critiche, i due tetti diversi (quota di AGENTI critici e quota di POST critici) e le voci
+    previste ma escluse dal tetto sugli agenti. Mai chiavi di configurazione o nomi di metodi."""
+    parts = [adversarial_share_sentence(stats, lang)]
+    has_voices = bool((stats or {}).get("adversarial_agents")) or bool(truncation)
+    post_cap = (stats or {}).get("cap")
+    if agent_cap is None and truncation:
+        agent_cap = truncation.get("max_share")
+    if has_voices and agent_cap is not None and post_cap is not None:
+        parts.append(t(lang, "report.share.caps", agent_cap=_cap_pct(agent_cap, lang),
+                       post_cap=_cap_pct(post_cap, lang)))
+    if truncation and agent_cap is not None:
+        try:
+            planned, kept = int(truncation["original_count"]), int(truncation["kept_count"])
+        except (KeyError, TypeError, ValueError):
+            planned = kept = 0
+        excluded = planned - kept
+        if excluded > 0 and kept > 0:
+            excluded_text = (t(lang, "report.share.excluded_one") if excluded == 1
+                             else t(lang, "report.share.excluded_many", count=excluded))
+            parts.append(t(lang, "report.share.truncated_one" if kept == 1 else "report.share.truncated_many",
+                           planned=planned, kept=kept, agent_cap=_cap_pct(agent_cap, lang), excluded=excluded_text))
+    return " ".join(parts)
+
+
+# ── Nomi interni: mai nel report ──────────────────────────────────────────────
+# Chiavi di configurazione e nomi di metodi che il lettore non deve vedere (i fatti li dice il paragrafo
+# "Voci critiche" dell'appendice, scritto dal codice). Gli id dei template e i nomi degli archetipi esclusi
+# si aggiungono per ogni report.
+INTERNAL_KEYS = (
+    "max_adversarial_share", "adversarial_post_share_cap", "adversarial_agent_share_cap", "adversarial_truncation",
+    "adversarial_personas", "random_sample", "template_id", "extra_instructions", "mandatory_sections",
+    "report_focus", "original_count", "kept_count", "max_share", "persona_key",
+)
+
+
+def drop_names(text: str, names: list[str]) -> str:
+    """Toglie dei nomi dagli elenchi tra parentesi di un testo: "(A, B, C)" -> "(A, B)"; una parentesi rimasta
+    vuota si toglie. Serve alle istruzioni del template che nominano archetipi esclusi dalla simulazione."""
+    wanted = {n.strip().lower() for n in names or [] if n and n.strip()}
+    if not text or not wanted:
+        return text
+
+    def paren(m):
+        items = [x.strip() for x in m.group(1).split(",")]
+        kept = [x for x in items if x.lower() not in wanted]
+        if len(kept) == len(items):
+            return m.group(0)
+        return f" ({', '.join(kept)})" if kept else ""
+
+    return re.sub(r"\s*\(([^()]*)\)", paren, text)
+
+
+def _internal_term_re(terms: list[str]) -> re.Pattern | None:
+    terms = sorted({x.strip() for x in terms if x and len(x.strip()) >= 3}, key=len, reverse=True)
+    if not terms:
+        return None
+    return re.compile(r"(?<![\w])`?(?:" + "|".join(re.escape(x) for x in terms) + r")`?(?![\w])", re.I)
+
+
+def strip_internal_names(md: str, terms: list[str]) -> tuple[str, list[dict]]:
+    """Toglie dal report le frasi con un nome interno: chiavi di configurazione, id dei template, nomi dei
+    metodi di campionamento, archetipi esclusi dalla simulazione ("la voce del Competitor indiretto non era
+    presente"). Titoli, tabelle e codice restano. Ritorna (report, [{...}])."""
+    pattern = _internal_term_re(terms)
+    if not md or pattern is None:
+        return md, []
+    found: list[dict] = []
+    out, in_code = [], False
+    for line in md.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_code = not in_code
+        if in_code or not stripped or stripped.startswith("|") or _ANY_HEADING.match(line) \
+                or not pattern.search(line):
+            out.append(line)
+            continue
+        prefix, body = _LINE_PREFIX.match(line).groups()
+        sentences = claim_sentences(body)
+        kept = []
+        for s in sentences:
+            m = pattern.search(s)
+            if m:
+                found.append({"term": m.group(0).strip("`"), "sentence": s[:200]})
+            else:
+                kept.append(s)
+        rest = " ".join(kept).strip()
+        if rest.strip("*_ :"):
+            out.append(prefix + rest)
+    return (_tidy("\n".join(out)) if found else md), found
 
 
 def _norm(text: str) -> str:
@@ -1346,6 +1447,110 @@ def mask_post_quotes(sentence: str, agent_texts: list[tuple[str, str]]) -> str:
     return _QUOTE_SPAN.sub(mask, sentence)
 
 
+# ── Citazioni tagliate a meta' parola ─────────────────────────────────────────
+# Il report cita i post: una citazione che finisce a meta' parola ("vorrei dat[...]", "le fiere f[...]") si
+# accorcia all'ultima frase completa; senza una frase completa si toglie la frase del report che la contiene.
+
+_ANY_QUOTE = re.compile(r"\"([^\"\n]+)\"|“([^”\n]+)”|«([^»\n]+)»")
+_ELLIPSIS_MARK = r"(?:\[\s*(?:\.\.\.|…)\s*\]|\(\s*(?:\.\.\.|…)\s*\)|\.\.\.|…)"
+# Un'ellissi tra parentesi attaccata a una parola: "dat[...]" e' sempre un taglio, mai uno stile
+_BRACKET_CUT = re.compile(r"(?<=\w)(?:\[\s*(?:\.\.\.|…)\s*\]|\(\s*(?:\.\.\.|…)\s*\))")
+_TRAILING_ELLIPSIS = re.compile(rf"\s*{_ELLIPSIS_MARK}[\s.,;:]*$")
+# Almeno tante parole nella frase completa che resta della citazione
+_CUT_QUOTE_MIN_WORDS = 3
+
+
+def _continues_word(head: str, sources: list[str]) -> bool:
+    """head (la citazione fino al taglio) sta in un testo degli agenti e li' l'ultima parola continua:
+    "le fiere f" in "le fiere fanno...". Falso se una ricorrenza finisce a fine parola."""
+    tokens = head.replace("’", "'").split()
+    if len(tokens) < 2 and len(head) < 8:
+        return False
+    pattern = re.compile(r"\s+".join(re.escape(tok) for tok in tokens), re.I)
+    continued = False
+    for source in sources:
+        text = source.replace("’", "'")
+        for m in pattern.finditer(text):
+            if m.end() < len(text) and text[m.end()].isalnum():
+                continued = True
+            else:
+                return False
+    return continued
+
+
+def quote_cut_at(inner: str, sources: list[str]) -> int | None:
+    """Dove la citazione e' tagliata a meta' parola (indice in inner), o None se non lo e'."""
+    bracket = _BRACKET_CUT.search(inner)
+    if bracket:
+        return bracket.start()
+    trailing = _TRAILING_ELLIPSIS.search(inner)
+    head = inner[: trailing.start()] if trailing else inner.rstrip()
+    if head and head[-1].isalnum() and _continues_word(head, sources):
+        return len(head)
+    return None
+
+
+def _complete_sentences(head: str) -> str:
+    """Le frasi complete all'inizio di head (che finisce a meta' parola), o "" se non ce n'e' una."""
+    from ..utils.excerpt import SENTENCE_END
+    ends = [m.end() for m in SENTENCE_END.finditer(head + " ") if m.end() <= len(head)]
+    kept = head[: ends[-1]].strip() if ends else ""
+    return kept if len(kept.split()) >= _CUT_QUOTE_MIN_WORDS else ""
+
+
+def fix_cut_quotes(md: str, agent_texts: list[tuple[str, str]] | None = None) -> tuple[str, list[dict]]:
+    """Le citazioni tagliate a meta' parola: accorciate all'ultima frase completa, oppure tolte con la frase
+    del report che le contiene. Tabelle, titoli e codice restano. Ritorna (report, [{...}])."""
+    if not md:
+        return md, []
+    sources = [text for _, text in (agent_texts or []) if text]
+    found: list[dict] = []
+    out, in_code, changed = [], False, False
+    for line in md.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_code = not in_code
+        if in_code or not stripped or stripped.startswith("|") or _ANY_HEADING.match(line):
+            out.append(line)
+            continue
+        prefix, body = _LINE_PREFIX.match(line).groups()
+        edits: list[tuple[int, int, str]] = []    # (start, end, testo nuovo) nel body
+        drop_at: list[int] = []                   # posizioni di citazioni da togliere con la loro frase
+        for m in _ANY_QUOTE.finditer(body):
+            group = next(i for i, g in enumerate(m.groups(), 1) if g is not None)
+            inner = m.group(group)
+            cut = quote_cut_at(inner, sources)
+            if cut is None:
+                continue
+            kept = _complete_sentences(inner[:cut])
+            if kept:
+                edits.append((m.start(group), m.end(group), kept))
+                found.append({"action": "shortened", "quote": inner[:200], "kept": kept[:200]})
+            else:
+                drop_at.append(m.start())
+                found.append({"action": "removed", "quote": inner[:200]})
+        if not edits and not drop_at:
+            out.append(line)
+            continue
+        changed = True
+        # Confini delle frasi senza guardare dentro le citazioni (un punto in una citazione non chiude la frase)
+        masked = _ANY_QUOTE.sub(lambda q: q.group(0)[0] + "x" * (len(q.group(0)) - 2) + q.group(0)[-1], body)
+        starts = [0] + [s.end() for s in _SENT_SPLIT.finditer(masked)]
+        spans = [(a, b) for a, b in zip(starts, starts[1:] + [len(body)])]
+        kept_parts = []
+        for a, b in spans:
+            if any(a <= pos < b for pos in drop_at):
+                continue
+            part = body[a:b]
+            for start, end, new in sorted((e for e in edits if a <= e[0] < b), reverse=True):
+                part = part[: start - a] + new + part[end - a:]
+            kept_parts.append(part.strip())
+        rest = " ".join(p for p in kept_parts if p).strip()
+        if rest.strip("*_ :—–-"):
+            out.append(prefix + rest)
+    return (_tidy("\n".join(out)) if changed else md), found
+
+
 def _split_clauses(sentence: str) -> list[tuple[str, str]]:
     """[(separatore prima, clausola)], separando su , e ; fuori da parentesi e virgolette."""
     parts, buf, sep, depth, quote = [], "", "", 0, None
@@ -1957,6 +2162,12 @@ _TH_CUE = re.compile(
     r"\bquando\b|\bwhen\b|\bse\b|\bif\b|significa|\bmeans?\b|corrispond\w*|correspond\w*|defin\w*|"
     r"in\s+su|o\s+più|or\s+(?:more|above)|and\s+above|[≥≤]|[<>]=")
 _TH_LEVEL = re.compile(rf"(?i)\b({_CONS_LEVEL})\b")
+# Un limite inferiore attaccato al livello e' una soglia anche senza parola di soglia: "consenso medio, dal 75%",
+# "medio (dal 75%)", "medio, che parte dal 75%", "Medium consensus (from 75%)"
+_TH_ADJACENT = re.compile(
+    rf"(?i)\b(?:{_CONS_LEVEL})\b(?:\s+(?:consensus|consenso))?[\s,:(\u2013\u2014-]*"
+    rf"(?:(?:che|il\s+quale)\s+(?:parte|va|inizia|comincia)\s+|(?:which\s+)?start(?:s|ing)?\s+|)"
+    rf"(?:a\s+partire\s+dal?|dal|da|from)\s+{_TH_ART}{_TH_NUM}\s*%")
 
 
 def _th_value(raw: str) -> float:
@@ -1993,7 +2204,8 @@ def wrong_consensus_threshold(sentence: str) -> dict | None:
     """{"level", "stated"} se la frase dichiara una soglia di consenso diversa dalla tabella, altrimenti None.
     Un intervallo accanto a un livello ("consenso medio (40-70%)") e' sempre una soglia; un limite solo con una
     parola di soglia nella frase ("sarebbe", "quando", "would"...): "oltre il 60% e' contrario" e' un valore."""
-    if not _CONSENSUS_WORD.search(sentence) or not (_TH_CUE.search(sentence) or _TH_RANGE.search(sentence)):
+    if not _CONSENSUS_WORD.search(sentence) or not (_TH_CUE.search(sentence) or _TH_RANGE.search(sentence)
+                                                     or _TH_ADJACENT.search(sentence)):
         return None
     bounds = _threshold_bounds()
     for kind, values, pos in _stated_thresholds(sentence):
@@ -2827,3 +3039,128 @@ def strip_scenario_probabilities(md: str) -> tuple[str, int]:
         if new != line:
             lines[i] = _clean(new)
     return _tidy("\n".join(lines)) if stripped else md, stripped
+
+
+# ── Entusiasmo collettivo: solo se gli agenti naturali entusiasti non sono pochi ──────────────────────
+# Un report ha scritto "adozione entusiasta" con 1 agente entusiasta su 17. Lo stato emotivo e' un tono:
+# sotto ENTHUSIASM_CLAIM_MIN_SHARE degli agenti naturali l'aggettivo si toglie ("adozione entusiasta" ->
+# "adozione") e le frasi che parlano di entusiasmo diffuso si tolgono. Appendice, tabelle e codice restano.
+ENTHUSIASM_CLAIM_MIN_SHARE = 0.25
+ENTHUSIASTIC_STATES = ("enthusiastic", "excited")
+_ENTHUSIASTIC_QUALIFIER = re.compile(
+    r"(?i)\b(adozion[ei]|accoglienz[ae]|rispost[ae]|ricezion[ei]|reazion[ei]|partecipazion[ei])\s+entusiast\w*|"
+    r"\benthusiastic\s+(adoption|reception|uptake|response|reaction|welcome)s?\b")
+_ENTHUSIASM_SPREAD = re.compile(
+    r"(?i)\bentusiasmo\s+(?:diffuso|generale|generalizzato|ampio|forte|crescente|condiviso|marcato)|"
+    r"\b(?:diffuso|generale|ampio|forte|grande|marcato)\s+entusiasmo|"
+    r"\b(?:la\s+maggior\s+parte|molti|gran\s+parte|quasi\s+tutti)\s+(?:degli\s+|gli\s+)?agenti\s+(?:\w+\s+){0,2}entusiast|"
+    r"\b(?:widespread|broad|general|strong|growing|shared|marked)\s+enthusiasm|"
+    r"\benthusiasm\s+(?:is|was)\s+(?:widespread|broad|general)|"
+    r"\b(?:most|many|almost\s+all)\s+(?:of\s+the\s+)?agents\s+(?:\w+\s+){0,2}enthusiastic")
+
+
+def fix_enthusiasm_claims(md: str, enthusiastic: int, natural: int) -> tuple[str, list[dict]]:
+    """Con pochi agenti naturali entusiasti (sotto ENTHUSIASM_CLAIM_MIN_SHARE) il report non parla di adozione
+    entusiasta ne' di entusiasmo diffuso. Ritorna (report, [{...}])."""
+    if not md or natural <= 0 or enthusiastic / natural >= ENTHUSIASM_CLAIM_MIN_SHARE:
+        return md, []
+    lines = md.split("\n")
+    appendix = section_bounds(lines, APPENDIX_HEADING_RE)
+    found: list[dict] = []
+    in_code = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_code = not in_code
+        if in_code or not stripped or stripped.startswith("|") or (appendix and appendix[0] <= i < appendix[1]):
+            continue
+        new = _ENTHUSIASTIC_QUALIFIER.sub(lambda m: _same_case(m.group(0), m.group(1) or m.group(2)), line)
+        if new != line:
+            found.append({"action": "qualifier_removed", "line": line.strip()[:200]})
+        if not _ANY_HEADING.match(new) and _ENTHUSIASM_SPREAD.search(new):
+            prefix, body = _LINE_PREFIX.match(new).groups()
+            sentences = claim_sentences(body)
+            kept = [s for s in sentences if not _ENTHUSIASM_SPREAD.search(s)]
+            found += [{"action": "removed", "sentence": s[:200]} for s in sentences if _ENTHUSIASM_SPREAD.search(s)]
+            rest = " ".join(kept).strip()
+            new = prefix + rest if rest.strip("*_ :") else ""
+        lines[i] = new
+    for f in found:
+        f.update({"enthusiastic": enthusiastic, "natural": natural})
+    return (_tidy("\n".join(lines)), found) if found else (md, [])
+
+
+# ── Conteggi degli elenchi: "tre rischi:" seguito da due voci ──────────────────────────────────────
+# Il testo che annuncia un elenco ("Emergono tre rischi principali:", "### 3 obiezioni") deve contare le voci
+# che restano dopo i passi che tolgono frasi e righe. Solo numeri da 2 a 10 e nomi di elenco noti.
+_NUMBER_WORDS = {
+    "it": {2: "due", 3: "tre", 4: "quattro", 5: "cinque", 6: "sei", 7: "sette", 8: "otto", 9: "nove", 10: "dieci"},
+    "en": {2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten"},
+}
+_WORD_VALUES = {w: (n, code) for code, words in _NUMBER_WORDS.items() for n, w in words.items()}
+_LIST_NOUNS = (
+    r"rischi|obiezioni|scenari|temi|segnali|leve|gap|punti|fattori|criticit[àa]|raccomandazioni|azioni|motivi|"
+    r"ragioni|elementi|aree|domande|argomenti|segmenti|vulnerabilit[àa]|frasi|messaggi|narrative|priorit[àa]|"
+    r"ostacoli|barriere|minacce|opportunit[àa]|dubbi|preoccupazioni|condizioni|interventi|"
+    r"risks|objections|scenarios|themes|signals|levers|gaps|points|factors|recommendations|actions|reasons|"
+    r"elements|areas|questions|topics|segments|vulnerabilities|phrases|messages|narratives|priorities|obstacles|"
+    r"barriers|threats|opportunities|doubts|concerns|conditions|issues")
+_LIST_COUNT = re.compile(
+    rf"(?i)(?<![\w.,])(\d{{1,2}}|{'|'.join(sorted(_WORD_VALUES, key=len, reverse=True))})"
+    rf"(\s+(?:[\w\u00e0-\u00ff]+\s+)?)({_LIST_NOUNS})\b")
+_LIST_ITEM = re.compile(r"^(?:[-*+]|\d+[.)])\s+\S")
+
+
+def _list_items_after(lines: list[str], i: int) -> int:
+    """Le voci di primo livello dell'elenco che segue la riga i (righe vuote in mezzo ammesse), o 0."""
+    j, count = i + 1, 0
+    while j < len(lines):
+        line = lines[j]
+        if not line.strip():
+            j += 1
+            continue
+        if _LIST_ITEM.match(line):
+            count += 1
+        elif not (line.startswith((" ", "\t")) and count):
+            break
+        j += 1
+    return count
+
+
+def _number_like(original: str, value: int) -> str:
+    """value scritto come original: cifre o parola nella stessa lingua, con la stessa maiuscola."""
+    if original.isdigit():
+        return str(value)
+    lang = _WORD_VALUES[original.lower()][1]
+    word = _NUMBER_WORDS[lang][value]
+    return word[:1].upper() + word[1:] if original[:1].isupper() else word
+
+
+def fix_list_counts(md: str) -> tuple[str, list[dict]]:
+    """Il numero che annuncia un elenco ("tre rischi:") diventa quello delle voci rimaste. Solo righe che finiscono
+    con ":" o titoli seguiti da un elenco, con un solo conteggio; tabelle e codice restano."""
+    if not md:
+        return md, []
+    lines = md.split("\n")
+    found: list[dict] = []
+    in_code = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_code = not in_code
+        if in_code or not stripped or stripped.startswith("|") or _LIST_ITEM.match(line):
+            continue
+        if not (_ANY_HEADING.match(line) or stripped.rstrip("*_ ").endswith(":")):
+            continue
+        matches = list(_LIST_COUNT.finditer(line))
+        if len(matches) != 1:
+            continue
+        m = matches[0]
+        raw = m.group(1)
+        stated = int(raw) if raw.isdigit() else _WORD_VALUES[raw.lower()][0]
+        items = _list_items_after(lines, i)
+        if items < 2 or items > 10 or items == stated or not 2 <= stated <= 10:
+            continue
+        lines[i] = line[:m.start(1)] + _number_like(raw, items) + line[m.end(1):]
+        found.append({"stated": stated, "items": items, "line": stripped[:200]})
+    return ("\n".join(lines), found) if found else (md, [])

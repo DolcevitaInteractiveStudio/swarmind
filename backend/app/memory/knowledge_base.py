@@ -7,10 +7,10 @@ modello non c'e'). Chroma lega l'embedding alla collection, quindi ogni versione
 sua: kb_project_<id> per quello di default, kb_project_<id>_emb<versione> per gli altri.
 """
 from __future__ import annotations
-import re
 
 import structlog
 
+from ..utils.excerpt import ELLIPSIS, MIN_SENTENCE_KEEP, trim_excerpt
 from .chroma_client import get_chroma
 from .kb_embedding import DEFAULT_EMBEDDING_VERSION, E5_EMBEDDING_VERSION, default_kb_embedder, get_kb_embedder
 
@@ -32,14 +32,10 @@ KB_PROMPT_EXCERPTS = 3
 KB_EXCERPT_MAX_CHARS = 650
 KB_PROMPT_MAX_CHARS = 1600
 KB_EXCERPT_SEPARATOR = "\n---\n"
-# Segna un estratto tagliato a meta' frase
-KB_EXCERPT_ELLIPSIS = "\u2026"
-# Si taglia a fine frase solo se resta almeno questa quota del limite: una fine frase troppo presto
-# butta testo utile (su un brief di prova, senza soglia, 2 fatti su 20 restavano fuori dal prompt)
-KB_EXCERPT_MIN_SENTENCE_KEEP = 0.75
-# Fine frase: . ! ? o \u2026, con eventuali virgolette o parentesi di chiusura, seguiti da uno spazio.
-# Lo spazio dopo esclude decimali e indirizzi (3.5, www.example.com)
-_SENTENCE_END = re.compile(r"[.!?\u2026][\"'\u00bb\u201d\u2019)\]]*(?=\s)")
+# Il taglio degli estratti (fine frase con la soglia del 75%, altrimenti parola intera + ellissi) e' lo
+# stesso dei post mostrati agli agenti e al report: app.utils.excerpt
+KB_EXCERPT_ELLIPSIS = ELLIPSIS
+KB_EXCERPT_MIN_SENTENCE_KEEP = MIN_SENTENCE_KEEP
 
 
 def chunk_kb_text(text: str) -> list[str]:
@@ -55,26 +51,8 @@ def chunk_kb_text(text: str) -> list[str]:
 
 
 def trim_kb_excerpt(text: str, cap: int) -> str:
-    """Accorcia un chunk a cap caratteri al massimo, senza mai tagliare una parola.
-
-    Taglia dopo l'ultima fine frase che ci sta, se tiene almeno KB_EXCERPT_MIN_SENTENCE_KEEP del
-    limite; altrimenti dopo l'ultima parola intera e aggiunge KB_EXCERPT_ELLIPSIS.
-    Se non ci sta nemmeno una parola ritorna "".
-    """
-    text = text.strip()
-    if len(text) <= cap:
-        return text
-    # endpos cap + 1: la lookahead vede il carattere subito dopo il limite
-    ends = [m.end() for m in _SENTENCE_END.finditer(text, 0, cap + 1) if m.end() <= cap]
-    if ends and ends[-1] >= KB_EXCERPT_MIN_SENTENCE_KEEP * cap:
-        return text[: ends[-1]]
-    room = cap - len(KB_EXCERPT_ELLIPSIS)
-    if room <= 0:
-        return ""
-    # L'ultimo spazio entro room + 1: se il carattere in posizione room e' uno spazio la parola prima resta intera
-    last_space = re.search(r"\s\S*$", text[: room + 1])
-    head = text[: last_space.start()].rstrip(" ,;:-\u2013\u2014") if last_space else ""
-    return head + KB_EXCERPT_ELLIPSIS if head else ""
+    """Accorcia un chunk a cap caratteri al massimo, senza mai tagliare una parola (app.utils.excerpt)."""
+    return trim_excerpt(text, cap)
 
 
 def format_kb_excerpts(chunks: list[str]) -> str:

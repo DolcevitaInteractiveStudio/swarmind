@@ -83,9 +83,9 @@ SECTION_DESCRIPTIONS = {
     },
     "competitive_response_prediction": {
         "prompt": (
-            "From the posts of the competitor voices (adversarial 'indirect "
-            "competitor') and of the agents who mention competitors, and from "
-            "the competitors named in the brief, set out how competitors could "
+            "From the posts of the agents who speak for a competitor or "
+            "mention competitors, and from the competitors named in the "
+            "brief, set out how competitors could "
             "respond, as hypotheses grounded in those posts ('if ..., it is "
             "plausible that ...'): the narratives they could use, the features "
             "they could stress, the segments they could try to protect. Name a "
@@ -233,9 +233,10 @@ SECTION_DESCRIPTIONS = {
 ALWAYS_SECTIONS = ("debate_dynamics",)
 
 
-# Sezioni dei template che danno raccomandazioni (leve, riformulazioni, azioni, costruire o no): con una di
-# queste, o con un titolo "Raccomandazioni", i limiti del metodo citano le raccomandazioni operative.
-RECOMMENDATION_SECTIONS = ("pricing_levers", "messaging_gaps", "trust_recovery_path", "opportunity_cost")
+# Sezioni dei template che danno raccomandazioni operative (leve, azioni, costruire o no): con una di queste, o
+# con un titolo "Raccomandazioni", i limiti del metodo citano le raccomandazioni operative. messaging_gaps no:
+# suggerisce riformulazioni del messaggio, e la riga dei limiti restava in report senza raccomandazioni.
+RECOMMENDATION_SECTIONS = ("pricing_levers", "trust_recovery_path", "opportunity_cost")
 
 
 def section_title(name: str, lang: str = DEFAULT_LANGUAGE) -> str:

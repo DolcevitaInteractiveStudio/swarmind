@@ -29,7 +29,7 @@
         class="tab" :class="{ 'is-active': activeTab === tab.id }" :aria-selected="activeTab === tab.id ? 'true' : 'false'"
         @click="activeTab = tab.id">
         {{ tab.label }}
-        <span v-if="tab.id === 'feed' && feed.length" class="tab-count">{{ feed.length }}</span>
+        <span v-if="tab.id === 'feed' && feedTotalPosts" class="tab-count">{{ formatNumber(feedTotalPosts) }}</span>
       </button>
     </div>
 
@@ -44,6 +44,9 @@
           <option value="ANNOUNCE">{{ t('simulation.feed.announcements') }}</option>
         </select>
       </div>
+      <p v-if="feedSaved && feedTotalPosts > feedSaved" class="feed-note">
+        {{ t('simulation.feed.saved_note', { saved: formatNumber(feedSaved), total: formatNumber(feedTotalPosts) }) }}
+      </p>
       <div v-if="filteredFeed.length === 0" class="empty-tab">{{ t('simulation.feed.empty') }}</div>
       <div class="feed-list">
         <div v-for="post in filteredFeed" :key="post.post_id" class="feed-post" :class="post.author_id === 'SYSTEM' ? 'system-post' : ''">
@@ -203,6 +206,9 @@ const feedSearch = ref('')
 const feedActionFilter = ref('')
 const activeTab = ref('feed')
 const feedPage = ref(1)
+// Posts kept in the saved feed (the latest ones) and posts of the whole simulation (run counters)
+const feedSaved = ref(0)
+const feedTotalPosts = computed(() => Math.max(sim.value?.total_posts ?? 0, feedSaved.value))
 const canLoadMore = ref(false)
 const chatEl = ref(null)
 
@@ -330,6 +336,7 @@ async function loadFeed(page = 1) {
   if (page === 1) feed.value = data.feed
   else feed.value = [...feed.value, ...data.feed]
   feedPage.value = page
+  feedSaved.value = data.total
   canLoadMore.value = feed.value.length < data.total
 }
 
@@ -448,6 +455,7 @@ onUnmounted(() => clearTimeout(pollTimer))
 .feed-toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
 .feed-toolbar .input { flex: 1 1 14rem; }
 .feed-toolbar .select { flex: 0 1 12rem; }
+.feed-note { margin: 0 0 var(--space-3); color: var(--text-2); font-size: var(--text-sm); }
 
 .feed-list {
   background: var(--bg-surface);
