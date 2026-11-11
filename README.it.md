@@ -62,7 +62,7 @@ servizi. La procedura manuale:
 cp .env.example .env
 # ENCRYPTION_KEY is required; generate one and paste it into .env:
 python3 -c "import base64,os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
-# also replace POSTGRES_PASSWORD and CHROMA_TOKEN with random values
+# also replace POSTGRES_PASSWORD, CHROMA_TOKEN and REDIS_PASSWORD with random values
 docker compose up -d --build
 ```
 
@@ -87,12 +87,15 @@ Tutto si trova in `.env`; [`.env.example`](.env.example) documenta ogni impostaz
 |---|---|
 | `ENCRYPTION_KEY` | Obbligatoria. Cifra le chiavi dei provider salvate. Fanne un backup; non cambiarla mai alla leggera |
 | `SECRET_KEY` | Firma i token di accesso. Se vuota, viene derivata da `ENCRYPTION_KEY` |
-| `POSTGRES_PASSWORD`, `CHROMA_TOKEN` | Credenziali dei servizi interni |
+| `POSTGRES_PASSWORD`, `CHROMA_TOKEN`, `REDIS_PASSWORD` | Credenziali dei servizi interni |
+| `TRUSTED_PROXY_COUNT` | Proxy davanti al backend: `1` con il solo Compose, `2` dietro un reverse proxy sull'host |
+| `LOGIN_MAX_FAILURES_PER_ACCOUNT`, `LOGIN_MAX_FAILURES_PER_IP` | Accessi falliti ammessi per account e per IP in 15 minuti |
 | `FRONTEND_URL` | URL pubblico dell'app (origine per CORS e WebSocket) |
 | `SIMULATION_DEFAULT_LANGUAGE` | `en` o `it` |
 | `KB_EMBEDDING` | Vuota per multilingual-e5-small, `default` per il modello integrato di Chroma |
 | `CONTACT_EMAIL`, `BILLING_ENABLED` | Contatto della landing page; pagine dei piani e della fatturazione |
 | `GROQ_API_KEY` | Chiave di sistema facoltativa per gli utenti senza chiavi proprie |
+| `GRAPH_SYSTEM_KEY_MONTHLY_LIMIT` | Costruzioni del grafo per utente e per mese con la chiave di sistema (default 20) |
 
 ## Provider LLM
 
@@ -115,6 +118,8 @@ docker compose up -d
 
 Leggi prima [CHANGELOG.md](CHANGELOG.md) e fai un backup prima di aggiornare:
 [Operazioni](docs/manual/it/08-operations.md).
+Aggiornamento dalla 1.0.0: aggiungi `REDIS_PASSWORD` a `.env` prima di `docker compose up -d`
+([Operazioni](docs/manual/it/08-operations.md#aggiornamento-dalla-100-password-di-redis)).
 
 ## Documentazione
 

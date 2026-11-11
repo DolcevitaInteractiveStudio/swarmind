@@ -36,8 +36,8 @@ cd swarmind
 ./start.sh
 ```
 
-`start.sh` crea `.env` a partire da `.env.example` con valori casuali per `ENCRYPTION_KEY`, `POSTGRES_PASSWORD`
-e `CHROMA_TOKEN`, esegue `docker compose up -d --build` e attende il backend.
+`start.sh` crea `.env` a partire da `.env.example` con valori casuali per `ENCRYPTION_KEY`, `POSTGRES_PASSWORD`,
+`CHROMA_TOKEN` e `REDIS_PASSWORD`, esegue `docker compose up -d --build` e attende il backend.
 
 Per farlo a mano:
 
@@ -47,7 +47,8 @@ chmod 600 .env
 # Required: a Fernet key (32 url-safe base64 bytes)
 python3 -c "import base64,os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
 #   or: openssl rand -base64 32 | tr '+/' '-_'
-# Paste it as ENCRYPTION_KEY=... and replace POSTGRES_PASSWORD and CHROMA_TOKEN with random values
+# Paste it as ENCRYPTION_KEY=... and replace POSTGRES_PASSWORD, CHROMA_TOKEN and REDIS_PASSWORD
+# with random values (REDIS_PASSWORD: letters and digits only, e.g. openssl rand -hex 32)
 docker compose up -d --build
 docker compose ps        # every service "healthy" or "running" after a minute or two
 ```
@@ -80,6 +81,11 @@ docker compose up -d backend
 
 `FRONTEND_URL` è l'unica origine accettata da CORS e dal WebSocket. Una discrepanza si manifesta come
 chiamate API non riuscite o come una barra di avanzamento che non si muove mai.
+
+Dietro un reverse proxy che invia `X-Forwarded-For` (lo fa Caddy, e anche l'esempio nginx qui sotto),
+imposta anche `TRUSTED_PROXY_COUNT=2`: così il backend vede il vero IP del client, su cui si contano i
+limiti di accesso per IP. Con il valore predefinito `1` tutti gli utenti condividerebbero l'IP del proxy
+e il suo limite.
 
 ### Caddy
 
@@ -154,6 +160,8 @@ docker compose up -d
 
 Leggi `CHANGELOG.md` prima di aggiornare e fai un backup ([capitolo 8](08-operations.md)).
 Le nuove versioni possono aggiungere impostazioni a `.env.example`: confrontalo con il tuo `.env`.
+Aggiornamento dalla 1.0.0: imposta prima `REDIS_PASSWORD`
+([capitolo 8](08-operations.md#aggiornamento-dalla-100-password-di-redis)).
 
 ## Disinstallazione
 

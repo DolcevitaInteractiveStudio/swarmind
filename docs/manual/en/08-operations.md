@@ -65,9 +65,37 @@ by root in your checkout (see `docs/runbooks/deploy-file-ownership.md`).
   `docker compose exec postgres psql -U swarmind -c "ALTER USER swarmind PASSWORD 'new-value'"`,
   update `.env`, then `docker compose up -d`.
 - `CHROMA_TOKEN`, `FLOWER_PASSWORD`: update `.env` and `docker compose up -d`.
+- `REDIS_PASSWORD`: update `.env`, then `docker compose up -d redis backend worker` (and `flower`).
 - `SECRET_KEY`: changing it signs everyone out.
 - `ENCRYPTION_KEY`: changing it makes every stored provider key unreadable; users must connect
   their keys again. It also changes the derived `SECRET_KEY` when that is empty.
+
+## Upgrading from 1.0.0: Redis password
+
+Redis now requires a password. On an existing install, before `docker compose up -d`:
+
+1. Add `REDIS_PASSWORD` to `.env`, letters and digits only (it goes inside a URL):
+   `echo "REDIS_PASSWORD=$(openssl rand -hex 32)" >> .env`. `./start.sh` adds one if it is missing.
+2. Recreate Redis and the services that use it, when no simulation is running:
+   `docker compose up -d redis backend worker` (and `flower` if you run it).
+
+Without the setting Compose stops with `Set REDIS_PASSWORD in .env`. If Redis and the app disagree
+(Redis not recreated, or a different password), the backend and the worker refuse to start and the
+log says which side to fix. The Redis volume keeps its data.
+
+## Sign-in protection
+
+- Failed password checks, on sign-in and on a password change, are limited per account
+  (`LOGIN_MAX_FAILURES_PER_ACCOUNT`, default 5) and per client IP (`LOGIN_MAX_FAILURES_PER_IP`,
+  default 30) in a window of `LOGIN_THROTTLE_WINDOW_SECONDS` (default 900). Past a limit the answer is
+  "Too many failed attempts" until the window ends; a successful sign-in clears the account counter.
+  `0` turns a limit off. The counters live in Redis; if Redis does not answer, sign-in still works.
+- The client IP comes from `X-Forwarded-For`. `TRUSTED_PROXY_COUNT` is the number of proxies that
+  append to it: `1` with Compose alone (the frontend's nginx), `2` behind a reverse proxy on the host
+  ([chapter 1](01-installation.md#behind-a-reverse-proxy)). Too low, every user shares one IP counter;
+  too high, a client can choose its own IP.
+- A password change (Profile, or `create-superadmin --reset-password`) signs out every other session
+  of that user.
 
 ## Chroma
 

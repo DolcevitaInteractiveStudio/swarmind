@@ -84,3 +84,8 @@ models in `GROQ_MODEL_HEAVY`, `GROQ_MODEL_AGENT` and `GROQ_MODEL_FAST`. Leave it
 must bring their own key. Then "System default (Groq)" is not offered, and a user without a
 connection sees a prompt to open **AI connections**: projects and simulations cannot be created
 until a key is connected.
+
+Knowledge-graph builds (project upload and rebuild) always use the user's own key when they have one.
+On the system key each user can build at most `GRAPH_SYSTEM_KEY_MONTHLY_LIMIT` graphs per month
+(default 20, same monthly period as the simulation quota; `-1` no limit, `0` never on the system key).
+Past the limit the upload is refused with a message that points to **AI connections**.

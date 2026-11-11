@@ -36,8 +36,8 @@ cd swarmind
 ./start.sh
 ```
 
-`start.sh` creates `.env` from `.env.example` with a random `ENCRYPTION_KEY`, `POSTGRES_PASSWORD`
-and `CHROMA_TOKEN`, runs `docker compose up -d --build` and waits for the backend.
+`start.sh` creates `.env` from `.env.example` with a random `ENCRYPTION_KEY`, `POSTGRES_PASSWORD`,
+`CHROMA_TOKEN` and `REDIS_PASSWORD`, runs `docker compose up -d --build` and waits for the backend.
 
 To do it by hand:
 
@@ -47,7 +47,8 @@ chmod 600 .env
 # Required: a Fernet key (32 url-safe base64 bytes)
 python3 -c "import base64,os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
 #   or: openssl rand -base64 32 | tr '+/' '-_'
-# Paste it as ENCRYPTION_KEY=... and replace POSTGRES_PASSWORD and CHROMA_TOKEN with random values
+# Paste it as ENCRYPTION_KEY=... and replace POSTGRES_PASSWORD, CHROMA_TOKEN and REDIS_PASSWORD
+# with random values (REDIS_PASSWORD: letters and digits only, e.g. openssl rand -hex 32)
 docker compose up -d --build
 docker compose ps        # every service "healthy" or "running" after a minute or two
 ```
@@ -80,6 +81,10 @@ docker compose up -d backend
 
 `FRONTEND_URL` is the only origin accepted by CORS and by the WebSocket. A mismatch shows up as
 failed API calls or a progress bar that never moves.
+
+Behind a reverse proxy that sends `X-Forwarded-For` (Caddy does, and so does the nginx example below),
+also set `TRUSTED_PROXY_COUNT=2`: the backend then sees the real client IP, which the sign-in limits
+count per IP. With the default `1` every user would share the proxy's IP and its limit.
 
 ### Caddy
 
@@ -154,6 +159,8 @@ docker compose up -d
 
 Read `CHANGELOG.md` before upgrading and take a backup ([chapter 8](08-operations.md)).
 New releases may add settings to `.env.example`: compare it with your `.env`.
+Upgrading from 1.0.0: set `REDIS_PASSWORD` first
+([chapter 8](08-operations.md#upgrading-from-100-redis-password)).
 
 ## Uninstall
 
