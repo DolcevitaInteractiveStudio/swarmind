@@ -285,7 +285,8 @@
       "comments": "Comments",
       "announcements": "Announcements",
       "empty": "No posts yet.",
-      "load_more": "Load more"
+      "load_more": "Load more",
+      "saved_note": "Latest {saved} posts of {total}: the feed keeps only the most recent posts."
     },
     "metrics": {
       "empty": "No metrics available.",

@@ -265,12 +265,18 @@ def simulation_status(sim_id: str):
 @sim_bp.get("/<string:sim_id>/feed")
 @login_required
 def simulation_feed(sim_id: str):
-    Simulation.query.filter_by(
+    """Pagina del feed salvato, dal post piu' recente (order=asc per l'ordine cronologico).
+
+    Il feed salvato tiene solo gli ultimi post (FEED_MAX_SIZE): "total" sono i post salvati, "total_posts" quelli
+    dell'intera simulazione (contatori del run). La UI mostrava la lunghezza del feed, ferma a 500.
+    """
+    sim = Simulation.query.filter_by(
         id=sim_id, user_id=g.current_user.id
     ).first_or_404()
 
-    page = request.args.get("page", 1, type=int)
-    per_page = min(request.args.get("per_page", 50, type=int), 200)
+    page = max(request.args.get("page", 1, type=int), 1)
+    per_page = min(max(request.args.get("per_page", 50, type=int), 1), 200)
+    order = "asc" if request.args.get("order") == "asc" else "desc"
 
     store = _store()
     try:
@@ -278,6 +284,8 @@ def simulation_feed(sim_id: str):
         feed = data.get("social_feed", [])
     except FileNotFoundError:
         feed = []
+    if order == "desc":
+        feed = feed[::-1]
 
     # Paginazione manuale
     start = (page - 1) * per_page
@@ -286,8 +294,10 @@ def simulation_feed(sim_id: str):
     return jsonify({
         "feed": page_items,
         "total": len(feed),
+        "total_posts": max(sim.total_posts or 0, len(feed)),
         "page": page,
         "per_page": per_page,
+        "order": order,
     }), 200
 
 

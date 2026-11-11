@@ -285,7 +285,8 @@
       "comments": "Commenti",
       "announcements": "Annunci",
       "empty": "Nessun post ancora.",
-      "load_more": "Carica altri"
+      "load_more": "Carica altri",
+      "saved_note": "Ultimi {saved} post su {total}: il feed conserva solo i post più recenti."
     },
     "metrics": {
       "empty": "Nessuna metrica disponibile.",

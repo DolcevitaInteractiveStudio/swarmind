@@ -233,9 +233,10 @@ SECTION_DESCRIPTIONS = {
 ALWAYS_SECTIONS = ("debate_dynamics",)
 
 
-# Sezioni dei template che danno raccomandazioni (leve, riformulazioni, azioni, costruire o no): con una di
-# queste, o con un titolo "Raccomandazioni", i limiti del metodo citano le raccomandazioni operative.
-RECOMMENDATION_SECTIONS = ("pricing_levers", "messaging_gaps", "trust_recovery_path", "opportunity_cost")
+# Sezioni dei template che danno raccomandazioni operative (leve, azioni, costruire o no): con una di queste, o
+# con un titolo "Raccomandazioni", i limiti del metodo citano le raccomandazioni operative. messaging_gaps no:
+# suggerisce riformulazioni del messaggio, e la riga dei limiti restava in report senza raccomandazioni.
+RECOMMENDATION_SECTIONS = ("pricing_levers", "trust_recovery_path", "opportunity_cost")
 
 
 def section_title(name: str, lang: str = DEFAULT_LANGUAGE) -> str:

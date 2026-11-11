@@ -945,6 +945,8 @@ class ReportAgent:
                          for a in state.agents},
             appendix_parameters=appendix_parameters,
             internal_terms=internal_terms,
+            enthusiasm=(sum(str(_agent_field(a, "emotional_state", "") or "").lower()
+                            in postprocess.ENTHUSIASTIC_STATES for a in nat_agents), len(nat_agents)),
             lang=language,
             stance=stance,
             population={"agents": len(state.agents), "natural": len(nat_agents),
@@ -1012,7 +1014,8 @@ class ReportAgent:
                          natural_names: list[str] | None = None, stance: dict | None = None,
                          agent_roles: dict[str, str] | None = None, appendix_parameters: str | None = None,
                          claims: dict | None = None, population: dict | None = None,
-                         internal_terms: list[str] | None = None) -> str:
+                         internal_terms: list[str] | None = None,
+                         enthusiasm: tuple[int, int] | None = None) -> str:
         """Le parti del report che appartengono al codice, applicate dopo la risposta del modello.
 
         Ordine (ogni passo lavora sul testo lasciato dai precedenti; nessuno deve creare input che un passo
@@ -1022,8 +1025,8 @@ class ReportAgent:
           3. confidenza ed entropia: livello, valore e lettura calcolati (le frasi sulle soglie restano);
           4. nomi dei campi -> parole del lettore (i controlli seguenti leggono le parole del lettore);
           5. frasi del modello sbagliate per significato: agenti adversarial, convinzione letta come
-             approvazione, "consenso" solo per la posizione, soglie di consenso sbagliate, posizioni ricavate
-             dalla convinzione;
+             approvazione, "consenso" solo per la posizione, soglie di consenso sbagliate, entusiasmo
+             collettivo con pochi agenti entusiasti, posizioni ricavate dalla convinzione;
           6. quote di posizione attaccate a un segmento (prima delle quote di popolazione: una quota di
              posizione non deve essere letta come quota di composizione);
           7. quote di composizione della popolazione e conteggi usati come peso (scenari, previsione);
@@ -1032,7 +1035,8 @@ class ReportAgent:
              sistema, dopo che i passi 6-7 hanno finito di cambiare le cifre;
           9. etichette a meta' frase, riga delle raccomandazioni, riga degli archetipi, nomi interni (chiavi di
             configurazione, id dei template, archetipi esclusi), paragrafo delle voci critiche;
-         10. controllo finale dei frammenti (repair_text) sul testo completo.
+         10. controllo finale dei frammenti (repair_text) sul testo completo; per ultimi, i numeri che
+             annunciano un elenco ("tre rischi:") contano le voci rimaste.
         Dopo ogni passo che toglie frasi (5-10), repair_orphan_references ripara o toglie la frase seguente
         se comincia rimandando alla frase tolta ("Questa dispersione, ..."): report_text_repaired.
         """
@@ -1108,6 +1112,12 @@ class ReportAgent:
         for found in thresholds:
             log.warning("report_consensus_threshold_removed", **found)
         report = orphans(before, report)
+        if enthusiasm:
+            before = report
+            report, enthusiasm_fixed = postprocess.fix_enthusiasm_claims(report, *enthusiasm)
+            for found in enthusiasm_fixed:
+                log.warning("report_enthusiasm_claim_fixed", **found)
+            report = orphans(before, report)
         before = report
         report, claims_on_positions = postprocess.fix_position_claims(report, stance, lang)
         for found in claims_on_positions:
@@ -1174,6 +1184,10 @@ class ReportAgent:
         report, dangling = postprocess.fix_dangling_section_starts(report, lang)
         for found in dangling:
             log.warning("report_text_repaired", **found)
+        # Last: the counts that announce a list ("three risks:") match the items left by the steps above
+        report, counts = postprocess.fix_list_counts(report)
+        for found in counts:
+            log.warning("report_list_count_fixed", **found)
         return report
 
     @staticmethod

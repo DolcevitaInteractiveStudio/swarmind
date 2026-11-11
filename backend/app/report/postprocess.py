@@ -2162,6 +2162,12 @@ _TH_CUE = re.compile(
     r"\bquando\b|\bwhen\b|\bse\b|\bif\b|significa|\bmeans?\b|corrispond\w*|correspond\w*|defin\w*|"
     r"in\s+su|o\s+più|or\s+(?:more|above)|and\s+above|[≥≤]|[<>]=")
 _TH_LEVEL = re.compile(rf"(?i)\b({_CONS_LEVEL})\b")
+# Un limite inferiore attaccato al livello e' una soglia anche senza parola di soglia: "consenso medio, dal 75%",
+# "medio (dal 75%)", "medio, che parte dal 75%", "Medium consensus (from 75%)"
+_TH_ADJACENT = re.compile(
+    rf"(?i)\b(?:{_CONS_LEVEL})\b(?:\s+(?:consensus|consenso))?[\s,:(\u2013\u2014-]*"
+    rf"(?:(?:che|il\s+quale)\s+(?:parte|va|inizia|comincia)\s+|(?:which\s+)?start(?:s|ing)?\s+|)"
+    rf"(?:a\s+partire\s+dal?|dal|da|from)\s+{_TH_ART}{_TH_NUM}\s*%")
 
 
 def _th_value(raw: str) -> float:
@@ -2198,7 +2204,8 @@ def wrong_consensus_threshold(sentence: str) -> dict | None:
     """{"level", "stated"} se la frase dichiara una soglia di consenso diversa dalla tabella, altrimenti None.
     Un intervallo accanto a un livello ("consenso medio (40-70%)") e' sempre una soglia; un limite solo con una
     parola di soglia nella frase ("sarebbe", "quando", "would"...): "oltre il 60% e' contrario" e' un valore."""
-    if not _CONSENSUS_WORD.search(sentence) or not (_TH_CUE.search(sentence) or _TH_RANGE.search(sentence)):
+    if not _CONSENSUS_WORD.search(sentence) or not (_TH_CUE.search(sentence) or _TH_RANGE.search(sentence)
+                                                     or _TH_ADJACENT.search(sentence)):
         return None
     bounds = _threshold_bounds()
     for kind, values, pos in _stated_thresholds(sentence):
@@ -3032,3 +3039,128 @@ def strip_scenario_probabilities(md: str) -> tuple[str, int]:
         if new != line:
             lines[i] = _clean(new)
     return _tidy("\n".join(lines)) if stripped else md, stripped
+
+
+# ── Entusiasmo collettivo: solo se gli agenti naturali entusiasti non sono pochi ──────────────────────
+# Un report ha scritto "adozione entusiasta" con 1 agente entusiasta su 17. Lo stato emotivo e' un tono:
+# sotto ENTHUSIASM_CLAIM_MIN_SHARE degli agenti naturali l'aggettivo si toglie ("adozione entusiasta" ->
+# "adozione") e le frasi che parlano di entusiasmo diffuso si tolgono. Appendice, tabelle e codice restano.
+ENTHUSIASM_CLAIM_MIN_SHARE = 0.25
+ENTHUSIASTIC_STATES = ("enthusiastic", "excited")
+_ENTHUSIASTIC_QUALIFIER = re.compile(
+    r"(?i)\b(adozion[ei]|accoglienz[ae]|rispost[ae]|ricezion[ei]|reazion[ei]|partecipazion[ei])\s+entusiast\w*|"
+    r"\benthusiastic\s+(adoption|reception|uptake|response|reaction|welcome)s?\b")
+_ENTHUSIASM_SPREAD = re.compile(
+    r"(?i)\bentusiasmo\s+(?:diffuso|generale|generalizzato|ampio|forte|crescente|condiviso|marcato)|"
+    r"\b(?:diffuso|generale|ampio|forte|grande|marcato)\s+entusiasmo|"
+    r"\b(?:la\s+maggior\s+parte|molti|gran\s+parte|quasi\s+tutti)\s+(?:degli\s+|gli\s+)?agenti\s+(?:\w+\s+){0,2}entusiast|"
+    r"\b(?:widespread|broad|general|strong|growing|shared|marked)\s+enthusiasm|"
+    r"\benthusiasm\s+(?:is|was)\s+(?:widespread|broad|general)|"
+    r"\b(?:most|many|almost\s+all)\s+(?:of\s+the\s+)?agents\s+(?:\w+\s+){0,2}enthusiastic")
+
+
+def fix_enthusiasm_claims(md: str, enthusiastic: int, natural: int) -> tuple[str, list[dict]]:
+    """Con pochi agenti naturali entusiasti (sotto ENTHUSIASM_CLAIM_MIN_SHARE) il report non parla di adozione
+    entusiasta ne' di entusiasmo diffuso. Ritorna (report, [{...}])."""
+    if not md or natural <= 0 or enthusiastic / natural >= ENTHUSIASM_CLAIM_MIN_SHARE:
+        return md, []
+    lines = md.split("\n")
+    appendix = section_bounds(lines, APPENDIX_HEADING_RE)
+    found: list[dict] = []
+    in_code = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_code = not in_code
+        if in_code or not stripped or stripped.startswith("|") or (appendix and appendix[0] <= i < appendix[1]):
+            continue
+        new = _ENTHUSIASTIC_QUALIFIER.sub(lambda m: _same_case(m.group(0), m.group(1) or m.group(2)), line)
+        if new != line:
+            found.append({"action": "qualifier_removed", "line": line.strip()[:200]})
+        if not _ANY_HEADING.match(new) and _ENTHUSIASM_SPREAD.search(new):
+            prefix, body = _LINE_PREFIX.match(new).groups()
+            sentences = claim_sentences(body)
+            kept = [s for s in sentences if not _ENTHUSIASM_SPREAD.search(s)]
+            found += [{"action": "removed", "sentence": s[:200]} for s in sentences if _ENTHUSIASM_SPREAD.search(s)]
+            rest = " ".join(kept).strip()
+            new = prefix + rest if rest.strip("*_ :") else ""
+        lines[i] = new
+    for f in found:
+        f.update({"enthusiastic": enthusiastic, "natural": natural})
+    return (_tidy("\n".join(lines)), found) if found else (md, [])
+
+
+# ── Conteggi degli elenchi: "tre rischi:" seguito da due voci ──────────────────────────────────────
+# Il testo che annuncia un elenco ("Emergono tre rischi principali:", "### 3 obiezioni") deve contare le voci
+# che restano dopo i passi che tolgono frasi e righe. Solo numeri da 2 a 10 e nomi di elenco noti.
+_NUMBER_WORDS = {
+    "it": {2: "due", 3: "tre", 4: "quattro", 5: "cinque", 6: "sei", 7: "sette", 8: "otto", 9: "nove", 10: "dieci"},
+    "en": {2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten"},
+}
+_WORD_VALUES = {w: (n, code) for code, words in _NUMBER_WORDS.items() for n, w in words.items()}
+_LIST_NOUNS = (
+    r"rischi|obiezioni|scenari|temi|segnali|leve|gap|punti|fattori|criticit[àa]|raccomandazioni|azioni|motivi|"
+    r"ragioni|elementi|aree|domande|argomenti|segmenti|vulnerabilit[àa]|frasi|messaggi|narrative|priorit[àa]|"
+    r"ostacoli|barriere|minacce|opportunit[àa]|dubbi|preoccupazioni|condizioni|interventi|"
+    r"risks|objections|scenarios|themes|signals|levers|gaps|points|factors|recommendations|actions|reasons|"
+    r"elements|areas|questions|topics|segments|vulnerabilities|phrases|messages|narratives|priorities|obstacles|"
+    r"barriers|threats|opportunities|doubts|concerns|conditions|issues")
+_LIST_COUNT = re.compile(
+    rf"(?i)(?<![\w.,])(\d{{1,2}}|{'|'.join(sorted(_WORD_VALUES, key=len, reverse=True))})"
+    rf"(\s+(?:[\w\u00e0-\u00ff]+\s+)?)({_LIST_NOUNS})\b")
+_LIST_ITEM = re.compile(r"^(?:[-*+]|\d+[.)])\s+\S")
+
+
+def _list_items_after(lines: list[str], i: int) -> int:
+    """Le voci di primo livello dell'elenco che segue la riga i (righe vuote in mezzo ammesse), o 0."""
+    j, count = i + 1, 0
+    while j < len(lines):
+        line = lines[j]
+        if not line.strip():
+            j += 1
+            continue
+        if _LIST_ITEM.match(line):
+            count += 1
+        elif not (line.startswith((" ", "\t")) and count):
+            break
+        j += 1
+    return count
+
+
+def _number_like(original: str, value: int) -> str:
+    """value scritto come original: cifre o parola nella stessa lingua, con la stessa maiuscola."""
+    if original.isdigit():
+        return str(value)
+    lang = _WORD_VALUES[original.lower()][1]
+    word = _NUMBER_WORDS[lang][value]
+    return word[:1].upper() + word[1:] if original[:1].isupper() else word
+
+
+def fix_list_counts(md: str) -> tuple[str, list[dict]]:
+    """Il numero che annuncia un elenco ("tre rischi:") diventa quello delle voci rimaste. Solo righe che finiscono
+    con ":" o titoli seguiti da un elenco, con un solo conteggio; tabelle e codice restano."""
+    if not md:
+        return md, []
+    lines = md.split("\n")
+    found: list[dict] = []
+    in_code = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_code = not in_code
+        if in_code or not stripped or stripped.startswith("|") or _LIST_ITEM.match(line):
+            continue
+        if not (_ANY_HEADING.match(line) or stripped.rstrip("*_ ").endswith(":")):
+            continue
+        matches = list(_LIST_COUNT.finditer(line))
+        if len(matches) != 1:
+            continue
+        m = matches[0]
+        raw = m.group(1)
+        stated = int(raw) if raw.isdigit() else _WORD_VALUES[raw.lower()][0]
+        items = _list_items_after(lines, i)
+        if items < 2 or items > 10 or items == stated or not 2 <= stated <= 10:
+            continue
+        lines[i] = line[:m.start(1)] + _number_like(raw, items) + line[m.end(1):]
+        found.append({"stated": stated, "items": items, "line": stripped[:200]})
+    return ("\n".join(lines), found) if found else (md, [])
