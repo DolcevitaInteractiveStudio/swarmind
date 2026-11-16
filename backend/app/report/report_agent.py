@@ -24,6 +24,7 @@ from typing import Any
 
 import structlog
 
+from ..config import Config
 from ..core.i18n import DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES, normalize_language, t, t_value, with_directive
 from ..core.llm import get_llm
 from ..population.integration import render_subject_card
@@ -531,12 +532,32 @@ class ReportAgent:
         max_reflection_rounds: int = 3,
         temperature: float = 0.2,   # lowered from 0.4 → reduces creative hallucination
         llm=None,
+        max_tokens: int | None = None,
+        reasoning_effort: str | None = None,
     ):
         self._llm_instance = llm
         self._llm_factory = get_llm
         self.max_tool_calls = max_tool_calls
         self.max_reflection_rounds = max_reflection_rounds
         self.temperature = temperature
+        # One budget for every report call (REPORT_MAX_TOKENS): a tool step stops at "OBSERVATION:" and costs
+        # only what it writes, but the model may write the report in any step. Models that reason by default
+        # spend their reasoning from the same budget, so the effort is sent explicitly (REPORT_REASONING_EFFORT).
+        self.max_tokens = max_tokens or Config.REPORT_MAX_TOKENS
+        self.reasoning_effort = reasoning_effort if reasoning_effort is not None else Config.REPORT_REASONING_EFFORT
+
+    async def _complete(self, messages: list[dict], *, max_tokens: int | None = None,
+                        stop: list[str] | None = None) -> str:
+        """One report call on the heavy tier, with the report budget and reasoning effort."""
+        llm = self._llm_instance or self._llm_factory()
+        return await llm.complete(
+            messages,
+            tier="heavy",
+            temperature=self.temperature,
+            max_tokens=max_tokens or self.max_tokens,
+            stop=stop,
+            reasoning_effort=self.reasoning_effort,
+        )
 
     @classmethod
     def _ensure_share_disclosure(cls, report: str, disclosure: str) -> str:
@@ -825,13 +846,7 @@ class ReportAgent:
         last_response = ""
 
         for iteration in range(self.max_tool_calls + self.max_reflection_rounds):
-            response = await (self._llm_instance or self._llm_factory()).complete(
-                messages,
-                tier="heavy",
-                temperature=self.temperature,
-                max_tokens=2048,
-                stop=["OBSERVATION:"],
-            )
+            response = await self._complete(messages, stop=["OBSERVATION:"])
             # Difesa in profondita': se il modello ha emesso OBSERVATION comunque,
             # tagliamo tutto da li' in poi cosi' il parser lavora su ACTION pulita.
             if "OBSERVATION:" in response:
@@ -865,12 +880,7 @@ class ReportAgent:
                             f"Start directly with '# {self._report_title(language)}:'.", language
                         ),
                     })
-                    final_response = await (self._llm_instance or self._llm_factory()).complete(
-                        messages,
-                        tier="heavy",
-                        temperature=self.temperature,
-                        max_tokens=16000,
-                    )
+                    final_response = await self._complete(messages)
                     final_report = self._extract_report(final_response)
                 else:
                     final_report = self._extract_report(response)
@@ -886,12 +896,7 @@ class ReportAgent:
                         f"Start directly with '# {self._report_title(language)}:'.", language
                     ),
                 })
-                final_response = await (self._llm_instance or self._llm_factory()).complete(
-                    messages,
-                    tier="heavy",
-                    temperature=self.temperature,
-                    max_tokens=16000,
-                )
+                final_response = await self._complete(messages)
                 final_report = self._extract_report(final_response)
                 break
 

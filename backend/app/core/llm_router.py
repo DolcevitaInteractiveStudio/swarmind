@@ -182,7 +182,8 @@ async def _call_anthropic(api_key: str, model: str, messages: list[dict],
             create_kwargs["stop_sequences"] = stop
         r = await client.messages.create(**create_kwargs)
         return LLMResponse(
-            r.content[0].text if r.content else "",
+            # Text blocks only: with thinking on (the default on recent models) the first block is a thinking block
+            "".join(getattr(b, "text", "") for b in r.content or [] if getattr(b, "type", "text") == "text"),
             # Normalizza sul valore OpenAI: chi legge finish_reason non distingue i provider
             finish_reason="length" if r.stop_reason == "max_tokens" else r.stop_reason,
             prompt_tokens=r.usage.input_tokens,
@@ -243,6 +244,39 @@ def _rejects_reasoning_none(error: Exception) -> bool:
     return getattr(error, "status_code", None) == 400 and "reasoning" in str(error).lower()
 
 
+# ── Reasoning sugli altri tier (OpenRouter) ───────────────────────────────────
+# Report, grafo, Demographer e personas: i modelli che ragionano di default (Anthropic Opus/Sonnet 4.5+ e
+# altri) spendono il ragionamento dallo stesso max_tokens del testo. Lo sforzo si invia esplicito (config:
+# REPORT_REASONING_EFFORT, HEAVY_REASONING_EFFORT); "default" non invia nulla e lascia quello del modello.
+# Gli altri provider non ricevono il parametro (OpenAI e Groq rifiutano reasoning sui modelli che non
+# ragionano): reasoning_mode registra "provider_default".
+
+REASONING_EFFORTS = ("none", "minimal", "low", "medium", "high", "xhigh")
+REASONING_PROVIDER_DEFAULT = "provider_default"
+# Modelli che hanno rifiutato effort "none" su questi tier: per loro si invia "low"
+_effort_none_rejected: set[str] = set()
+_invalid_efforts_logged: set[str] = set()
+
+
+def reasoning_effort_setting(value: str | None) -> str | None:
+    """Lo sforzo da inviare, o None per non inviare nulla ("default", vuoto o valore sconosciuto)."""
+    effort = (value or "").strip().lower()
+    if effort in REASONING_EFFORTS:
+        return effort
+    if effort not in ("", "default") and effort not in _invalid_efforts_logged:
+        _invalid_efforts_logged.add(effort)
+        log.warning("reasoning_effort_invalid", value=effort, allowed=[*REASONING_EFFORTS, "default"])
+    return None
+
+
+def _default_effort(tier: str) -> str | None:
+    """Lo sforzo del tier heavy dalla configurazione (HEAVY_REASONING_EFFORT); gli altri tier nessuno."""
+    if tier != "heavy":
+        return None
+    from ..config import Config
+    return Config.HEAVY_REASONING_EFFORT
+
+
 # ── Temperatura per i modelli Anthropic ───────────────────────────────────────
 # Anthropic accetta temperature fino a 1.0, ma i turni di simulazione inviano valori
 # piu' alti (decide_action fino a 1.1, evento di diversita' 1.2). I modelli "~anthropic/"
@@ -286,7 +320,10 @@ class MultiProviderLLM:
     async def complete(self, messages: list[dict], tier: str = "agent",
                        temperature: float = 0.7, max_tokens: int = 1024,
                        json_mode: bool = False,
-                       stop: list[str] | None = None) -> str:
+                       stop: list[str] | None = None,
+                       reasoning_effort: str | None = None) -> str:
+        """reasoning_effort: sforzo di ragionamento per OpenRouter fuori dal tier fast (None: quello del tier
+        dalla configurazione; "default": nessun parametro). Il tier fast decide da se' (none / low_fallback)."""
         model = self._model_for_tier(tier)
         t0 = time.monotonic()
         provider = self.config.provider
@@ -307,7 +344,13 @@ class MultiProviderLLM:
                 result = await self._complete_openrouter_fast(
                     model, messages, temperature, max_tokens, json_mode, stop)
 
-            elif provider in ("openai", "openrouter"):
+            elif provider == "openrouter":
+                effort = reasoning_effort_setting(
+                    reasoning_effort if reasoning_effort is not None else _default_effort(tier))
+                result = await self._complete_openrouter_effort(
+                    model, effort, messages, temperature, max_tokens, json_mode, stop)
+
+            elif provider == "openai":
                 result = await _call_openai_compatible(
                     self.config.api_key, model, messages,
                     temperature, max_tokens, json_mode,
@@ -315,15 +358,43 @@ class MultiProviderLLM:
             else:
                 raise ValueError(f"Unknown provider: {provider}")
 
+            if isinstance(result, LLMResponse) and result.reasoning_mode is None:
+                result.reasoning_mode = REASONING_PROVIDER_DEFAULT
             elapsed = round((time.monotonic() - t0) * 1000)
             log.debug("llm_call_ok", provider=provider, model=model,
-                      tier=tier, elapsed_ms=elapsed, **llm_log_fields(result))
+                      tier=tier, elapsed_ms=elapsed, max_tokens=max_tokens, **llm_log_fields(result))
             return result
 
         except Exception as e:
             log.error("llm_call_error", provider=provider, model=model,
                       status=getattr(e, "status_code", None), error=str(e))
             raise
+
+    async def _complete_openrouter_effort(self, model: str, effort: str | None, messages: list[dict],
+                                          temperature: float, max_tokens: int, json_mode: bool,
+                                          stop: list[str] | None) -> str:
+        """OpenRouter fuori dal tier fast: lo sforzo configurato, esplicito. Un modello con ragionamento
+        obbligatorio che rifiuta "none" riceve "low" (una volta per modello, poi sempre)."""
+        if effort == REASONING_MODE_NONE and model in _effort_none_rejected:
+            effort = "low"
+
+        async def call(e: str | None):
+            result = await _call_openai_compatible(
+                self.config.api_key, model, messages, temperature, max_tokens, json_mode,
+                base_url=self.config.base_url, stop=stop,
+                reasoning={"effort": e} if e else None)
+            result.reasoning_mode = f"effort={e}" if e else REASONING_PROVIDER_DEFAULT
+            return result
+
+        try:
+            return await call(effort)
+        except Exception as e:
+            if effort != REASONING_MODE_NONE or not _rejects_reasoning_none(e):
+                raise
+            _effort_none_rejected.add(model)
+            log.warning("reasoning_mode_selected", provider=self.config.provider, model=model,
+                        reasoning_mode="effort=low", error=str(e)[:300])
+            return await call("low")
 
     async def _complete_openrouter_fast(self, model: str, *call_args) -> str:
         # Modello mai visto: una sola chiamata decide, quelle concorrenti ne attendono

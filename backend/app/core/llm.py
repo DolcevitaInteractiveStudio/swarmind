@@ -46,8 +46,12 @@ class LLMClient:
         max_tokens: int = 1024,
         json_mode: bool = False,
         stop: list[str] | None = None,
+        reasoning_effort: str | None = None,
     ) -> str:
-        """Call Groq with auto-retry on recoverable errors."""
+        """Call Groq with auto-retry on recoverable errors.
+
+        reasoning_effort is accepted for parity with MultiProviderLLM and not sent: the system Groq
+        models keep their default (logged as reasoning_mode=provider_default)."""
         model = self._models.get(tier, self._models["agent"])
         kwargs: dict[str, Any] = {
             "model": model,
@@ -97,10 +101,12 @@ class LLMClient:
             elapsed = time.monotonic() - t0
             self._call_counts[model] = self._call_counts.get(model, 0) + 1
             result = from_chat_completion(resp)
+            result.reasoning_mode = "provider_default"
             log.debug(
                 "groq_call_ok",
                 model=model,
                 elapsed_ms=round(elapsed * 1000),
+                max_tokens=kwargs.get("max_tokens"),
                 tokens=resp.usage.total_tokens if resp.usage else "?",
                 **llm_log_fields(result),
             )

@@ -16,6 +16,7 @@ from typing import Any
 
 import structlog
 
+from ..config import Config
 from ..core.i18n import normalize_language, with_directive
 from ..core.llm import get_llm, get_llm_for_project
 
@@ -365,7 +366,7 @@ class Demographer:
             ],
             tier=self._tier,
             temperature=temperature,
-            max_tokens=6000,
+            max_tokens=Config.DEMOGRAPHER_MAX_TOKENS,
             json_mode=True,
         )
 
