@@ -110,6 +110,32 @@ se il brief o il modello di embedding sono cambiati. Ogni simulazione ha una col
 riprova le eliminazioni non riuscite. Per rimuovere le collection lasciate dalle versioni precedenti, usa
 `flask chroma-cleanup` (vedi il runbook più sotto).
 
+## Budget di token e modelli che ragionano
+
+I modelli che ragionano di default (Anthropic Opus e Sonnet 4.5 e successivi tramite OpenRouter, e altri)
+spendono i token del ragionamento dallo stesso budget `max_tokens` del testo che scrivono. I budget delle
+chiamate del tier heavy sono impostazioni in `.env`:
+
+| Impostazione | Default | Usata da |
+|---|---|---|
+| `REPORT_MAX_TOKENS` | 16000 | ogni chiamata del report: passi degli strumenti, report, continuazioni, sezioni rigenerate |
+| `REPORT_REASONING_EFFORT` | `low` | sforzo di ragionamento delle chiamate del report |
+| `HEAVY_REASONING_EFFORT` | `low` | sforzo di ragionamento di estrazione del grafo, Demographer e personas |
+| `GRAPH_MAX_TOKENS` | 16000 | estrazione del grafo, per ogni blocco del brief |
+| `DEMOGRAPHER_MAX_TOKENS` | 8000 | il Demographer (composizione della popolazione) |
+| `PERSONA_MAX_TOKENS` | 4096 | una persona |
+
+Lo sforzo (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`) viene inviato a OpenRouter in modo esplicito;
+`default` non invia nulla e lascia il default del modello. Un modello che rifiuta `none` riceve `low`.
+Le connessioni Anthropic, OpenAI e Groq lasciano il default del modello. Tieni ogni budget entro il limite di
+output del modello heavy: un valore piÃ¹ alto viene rifiutato dal provider.
+
+Il worker registra ogni chiamata come `llm_call_ok` con `max_tokens`, `finish_reason`, `reasoning_tokens` e
+`reasoning_mode` (`effort=low`, oppure `provider_default` quando non Ã¨ stato inviato uno sforzo). Una chiamata
+del report che finisce ancora con `finish_reason=length` viene continuata; vedi
+[Leggere il report](05-reading-the-report.md#report-incompleti). Dopo aver cambiato un'impostazione, riavvia
+backend e worker.
+
 ## Monitoraggio
 
 - `docker compose ps` e `docker compose logs -f backend worker` (log strutturati `event key=value`).

@@ -25,6 +25,7 @@ from typing import Any
 import networkx as nx
 import structlog
 
+from ..config import Config
 from .llm import get_llm
 
 log = structlog.get_logger()
@@ -318,7 +319,6 @@ class GraphBuilder:
         # si ricostruisce allo spawn (_ensure_project_kb)
         if ingest_kb:
             try:
-                from ..config import Config
                 from ..memory.chroma_client import chroma_settings
                 from ..memory.knowledge_base import ProjectKnowledgeBase
                 host, port, token = chroma_settings()
@@ -345,7 +345,7 @@ class GraphBuilder:
             ],
             tier="heavy",
             temperature=0.2,
-            max_tokens=16000,
+            max_tokens=Config.GRAPH_MAX_TOKENS,
             concurrency=5,
         )
 

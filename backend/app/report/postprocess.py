@@ -436,6 +436,89 @@ def ensure_metrics_table(md: str, table: str, lang: str = DEFAULT_LANGUAGE) -> t
 _ITALIAN_HOMOGRAPHS = {"positive", "negative"}
 
 
+# ── Chiavi interne -> etichette del lettore ───────────────────────────────────
+# Valori interni in snake_case che il modello puo' copiare nel report: le fasce di convinzione (anche nelle
+# forme scritte dai cataloghi di prima, "conviction_very_high", "convinzione_molto_alta"), le letture delle
+# metriche del dibattito ("polarization_active"), gli stati emotivi composti ("critical_neutral").
+
+# Not part of a path, a URL, an e-mail or a dotted name ("file.name_x"); a full stop after it is fine
+_SNAKE_CASE = re.compile(r"(?<![\w/.@-])`?([a-z]+(?:_[a-z]+)+)`?(?![\w/@-]|\.\w)")
+_LEGACY_BUCKET_LABELS = {
+    "conviction_very_low": "very_low", "conviction_low": "low", "conviction_medium": "medium",
+    "conviction_high": "high", "conviction_very_high": "very_high",
+    "convinzione_molto_bassa": "very_low", "convinzione_bassa": "low", "convinzione_media": "medium",
+    "convinzione_alta": "high", "convinzione_molto_alta": "very_high",
+}
+
+
+def internal_key_labels(lang: str = DEFAULT_LANGUAGE) -> dict[str, str]:
+    """Chiave interna in snake_case -> etichetta del lettore nella lingua del report."""
+    buckets = t_value(lang, "report.conviction_buckets")
+    labels = {key: buckets[bucket] for key, bucket in _LEGACY_BUCKET_LABELS.items()}
+    labels.update({key: buckets[key] for key in buckets if "_" in key})
+    labels.update({key: label[:1].lower() + label[1:] for key, label in t_value(lang, "debate.labels").items()})
+    labels.update({key: label for key, label in t_value(lang, "report.emotional_states").items() if "_" in key})
+    return labels
+
+
+def _sentence_start(text: str, at: int) -> bool:
+    before = text[:at].rstrip(" *_\"'«(")
+    return not before or before[-1] in ".!?-" or bool(re.search(r"^\s*(?:[-*+]|\d+[.)])$", before))
+
+
+def _prose_spans(md: str):
+    """(indice della riga, riga) delle righe di prosa: fuori da codice e appendice metodologica."""
+    lines = md.split("\n")
+    appendix = section_bounds(lines, APPENDIX_HEADING_RE)
+    in_code = False
+    for i, line in enumerate(lines):
+        if line.strip().startswith("```"):
+            in_code = not in_code
+            continue
+        if in_code or (appendix and appendix[0] <= i < appendix[1]):
+            continue
+        yield i, line
+    return
+
+
+def localize_internal_keys(md: str, lang: str = DEFAULT_LANGUAGE) -> tuple[str, list[str]]:
+    """Fuori dall'appendice e dal codice le chiavi interne note diventano le etichette del lettore
+    (internal_key_labels); a inizio frase con la maiuscola. Ritorna (report, chiavi sostituite)."""
+    if not md:
+        return md, []
+    labels = internal_key_labels(lang)
+    lines = md.split("\n")
+    found: list[str] = []
+    for i, line in _prose_spans(md):
+        def repl(m):
+            key = m.group(1)
+            if key not in labels:
+                return m.group(0)
+            found.append(key)
+            label = labels[key]
+            return label[:1].upper() + label[1:] if _sentence_start(m.string, m.start()) else label
+        lines[i] = _SNAKE_CASE.sub(repl, line)
+    return ("\n".join(lines), found) if found else (md, [])
+
+
+def humanize_snake_case(md: str) -> tuple[str, list[str]]:
+    """Ultima rete: un nome in snake_case rimasto nella prosa (fuori da appendice, codice, link) diventa
+    parole ("stance_shift_share" -> "stance shift share"). Ritorna (report, nomi)."""
+    if not md:
+        return md, []
+    lines = md.split("\n")
+    found: list[str] = []
+    for i, line in _prose_spans(md):
+        if "://" in line:
+            continue
+
+        def repl(m):
+            found.append(m.group(1))
+            return m.group(1).replace("_", " ")
+        lines[i] = _SNAKE_CASE.sub(repl, line)
+    return ("\n".join(lines), found) if found else (md, [])
+
+
 def localize_field_names(md: str, lang: str = DEFAULT_LANGUAGE) -> tuple[str, int]:
     """Fuori dall'appendice metodologica i nomi dei campi (mean_opinion_strength, opinion_entropy...)
     diventano le parole del lettore (report.field_words); in un report italiano anche i valori inglesi
@@ -2319,6 +2402,47 @@ _SEGMENT_HINT = re.compile(r"(?i)\bsegment\w*|\btarget\b|\bcluster\b|\bgrupp\w*|
 # Parole dei nomi dei segmenti che non identificano un segmento
 _GENERIC_SEGMENT_WORDS = {"consumatori", "consumers", "agenti", "agents", "esperti", "experts", "responsabili",
                           "settore", "sector", "clienti", "customers", "utenti", "users", "persone", "people"}
+# Parole dei nomi dei segmenti troppo comuni per indicare un segmento
+_SEGMENT_STOPWORDS = {"with", "from", "that", "this", "their", "them", "they", "into", "over", "under", "more",
+                      "less", "della", "delle", "dello", "degli", "nella", "nelle", "negli", "sono", "loro",
+                      "come", "senza", "anche", "tra", "fra", "per", "con", "and", "the", "for", "who"}
+
+
+def _segment_words(label: str) -> set[str]:
+    """Le parole che identificano un segmento nel testo: almeno 4 lettere, non generiche ne' funzionali.
+    "Partner bike shop owners and mechanics" -> {partner, bike, shop, owners, mechanics}."""
+    words = {w.lower() for w in re.findall(r"[A-Za-zÀ-ÿ]{4,}", label)}
+    return words - _GENERIC_SEGMENT_WORDS - _SEGMENT_STOPWORDS
+
+
+def _segment_named(window: str, words: dict[str, set[str]]) -> tuple[list[str], int] | None:
+    """I segmenti che window (il testo prima della cifra, nella sua proposizione) nomina: ([etichette], posizione
+    dell'ultima parola del segmento scelto). Vince il nome intero piu' vicino alla cifra; altrimenti il segmento
+    con piu' parole presenti, poi con la quota piu' alta delle sue parole ("bike owners" e' "Bike owners", non
+    "Bike shop owners"). Con parita' piu' segmenti: la cifra si confronta con ognuno. Solo parole generiche
+    ("segmento", "target"): ([], posizione), nessun dato calcolato. Nessuna menzione: None."""
+    exact = []
+    for label in words:
+        for m in re.finditer(rf"(?i)(?<![\w]){re.escape(label)}(?![\w])", window):
+            exact.append((m.end(), label))
+    if exact:
+        end, label = max(exact)
+        return [label], end
+    scores = {}
+    for label, ws in words.items():
+        found = {}
+        for w in ws:
+            hits = [m.start() for m in re.finditer(rf"(?i)(?<![\w]){re.escape(w)}", window)]
+            if hits:
+                found[w] = hits[-1]
+        if found:
+            scores[label] = (len(found), len(found) / len(ws), max(found.values()))
+    if scores:
+        best = max(s[:2] for s in scores.values())
+        labels = [label for label, s in scores.items() if s[:2] == best]
+        return labels, max(scores[label][2] for label in labels)
+    generic = list(_SEGMENT_HINT.finditer(window))
+    return ([], generic[-1].start()) if generic else None
 
 
 def _stance_of_word(word: str) -> str:
@@ -2328,18 +2452,6 @@ def _stance_of_word(word: str) -> str:
     if w.startswith("neutral"):
         return "neutral"
     return "support"
-
-
-def _segment_mentions(text: str, words: dict[str, set[str]]) -> list[tuple[int, str | None]]:
-    """(posizione, etichetta) di ogni parola dei nomi dei segmenti nel testo; le parole generiche ("segmento",
-    "target", "cluster") sono menzioni di un segmento senza etichetta (None: nessun dato calcolato)."""
-    out = []
-    for label, ws in words.items():
-        for w in ws:
-            for m in re.finditer(rf"(?i)(?<![\w]){re.escape(w)}", text):
-                out.append((m.start(), label))
-    out += [(m.start(), None) for m in _SEGMENT_HINT.finditer(text)]
-    return sorted(out, key=lambda x: x[0])
 
 
 def _segment_values(seg: dict, key: str) -> list[float]:
@@ -2364,9 +2476,11 @@ def fix_segment_stance_shares(md: str, stance: dict | None, segments: list[dict]
     words = {}
     for seg in segments or []:
         label = str(seg.get("label") or "")
-        words[label] = {w.lower() for w in re.findall(r"[A-Za-zÀ-ÿ]{5,}", label)} - _GENERIC_SEGMENT_WORDS
+        if _segment_words(label):
+            words[label] = _segment_words(label)
     computed = {seg["label"]: seg for seg in stance.get("by_segment") or []}
     lines = md.split("\n")
+    dropped_lines: set[int] = set()
     appendix = section_bounds(lines, APPENDIX_HEADING_RE)
     found, in_code = [], False
     for i, line in enumerate(lines):
@@ -2395,32 +2509,35 @@ def fix_segment_stance_shares(md: str, stance: dict | None, segments: list[dict]
                 clause = s[clause_start:clause_end]
                 if _NATURAL_AGENTS.search(clause):
                     continue
-                before = [(p, label) for p, label in _segment_mentions(clause, words) if p < start - clause_start]
-                if not before:
+                # Only the text before the figure, from the end of an earlier parenthesis: "A (60% support) and
+                # B (80% oppose)" -> the second figure belongs to B
+                window = clause[:start - clause_start]
+                window_start = window.rfind(")") + 1
+                named = _segment_named(window[window_start:], words)
+                if named is None:
                     continue  # not attached to a segment
-                # The nearest segment named by its label wins over a generic word right before it
-                seg_pos, label = before[-1]
-                named = [(p, lb) for p, lb in before if lb is not None]
-                if label is None and named and seg_pos - named[-1][0] <= 40:
-                    seg_pos, label = named[-1]
+                labels, seg_pos = named
                 qualifier = list(_NATURAL_AGENTS.finditer(s[:start]))
-                if qualifier and qualifier[-1].start() > clause_start + seg_pos:
+                if qualifier and qualifier[-1].start() > clause_start + window_start + seg_pos:
                     continue
                 value = float(m.group(1).replace(",", "."))
                 key = _stance_of_word(m.group(2))
-                seg = computed.get(label)
-                entry = {"removed": m.group(0), "segment": label, "sentence": s[:200]}
-                if seg and seg.get("agents", 0) >= SEGMENT_STANCE_MIN_AGENTS:
-                    if any(abs(v - value) <= 0.05 for v in _segment_values(seg, key)):
-                        continue
-                elif seg and seg["final"].get("measured"):
-                    final = seg["final"]
-                    if abs(final["counts"][key] / final["measured"] * 100 - value) <= 0.05:
-                        count_text = t(lang, "report.stance.count_share", count=final["counts"][key],
-                                       total=final["measured"], label=_stance_label(key, lang))
-                        s = s[:start] + count_text + s[end:]
-                        found.append({**entry, "action": "as_count"})
-                        continue
+                entry = {"removed": m.group(0), "segment": " / ".join(labels) or None, "sentence": s[:200]}
+                # The sentence is checked against the segment it names (each one, when the name is ambiguous)
+                segs = [computed[label] for label in labels if label in computed]
+                if any(seg.get("agents", 0) >= SEGMENT_STANCE_MIN_AGENTS
+                       and any(abs(v - value) <= 0.05 for v in _segment_values(seg, key)) for seg in segs):
+                    continue
+                small = [seg for seg in segs if seg.get("agents", 0) < SEGMENT_STANCE_MIN_AGENTS
+                         and seg["final"].get("measured")
+                         and abs(seg["final"]["counts"][key] / seg["final"]["measured"] * 100 - value) <= 0.05]
+                if small:
+                    final = small[0]["final"]
+                    count_text = t(lang, "report.stance.count_share", count=final["counts"][key],
+                                   total=final["measured"], label=_stance_label(key, lang))
+                    s = s[:start] + count_text + s[end:]
+                    found.append({**entry, "segment": small[0]["label"], "action": "as_count"})
+                    continue
                 if in_paren:
                     lead = re.search(r"[,;]?\s*$", s[:start])
                     s = s[:lead.start() if lead else start] + s[end:]
@@ -2435,9 +2552,13 @@ def fix_segment_stance_shares(md: str, stance: dict | None, segments: list[dict]
             s = re.sub(r"\(\s*\)", "", s)
             s = re.sub(r"\s+([,.;:)])", r"\1", s)
             sentences.append(s)
-        new = prefix + " ".join(sentences) if " ".join(sentences).strip() else ""
-        if new != line:
-            lines[i] = new
+        rest = " ".join(sentences).strip()
+        if not rest.strip("*_ :.-"):
+            # Nothing left: the line goes, never an empty bullet or a blank line inside a list
+            dropped_lines.add(i)
+        elif prefix + rest != line:
+            lines[i] = prefix + rest
+    lines = [line for i, line in enumerate(lines) if i not in dropped_lines]
     return (_tidy("\n".join(lines)), found) if found else (md, [])
 
 

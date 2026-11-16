@@ -91,6 +91,19 @@ class Config:
     REPORT_AGENT_MAX_REFLECTION_ROUNDS  = int(os.environ.get("REPORT_AGENT_MAX_REFLECTION_ROUNDS", "3"))
     REPORT_AGENT_TEMPERATURE            = float(os.environ.get("REPORT_AGENT_TEMPERATURE", "0.4"))
 
+    # Token budgets of the heavy tier. Models that reason by default (Anthropic Opus/Sonnet 4.5+ via OpenRouter,
+    # others) spend their reasoning tokens from the same max_tokens as the text: a budget sized for the text
+    # alone ends the reply early (finish_reason=length) with the report cut short.
+    # REPORT_MAX_TOKENS: every report call (tool steps, the report, its continuations and missing sections).
+    REPORT_MAX_TOKENS       = int(os.environ.get("REPORT_MAX_TOKENS", "16000"))
+    # Reasoning effort sent to OpenRouter: none | minimal | low | medium | high | xhigh, or "default" to send
+    # nothing and keep the model's own default. Other providers keep their default (see the manual).
+    REPORT_REASONING_EFFORT = os.environ.get("REPORT_REASONING_EFFORT", "low").strip().lower()
+    HEAVY_REASONING_EFFORT  = os.environ.get("HEAVY_REASONING_EFFORT", "low").strip().lower()
+    GRAPH_MAX_TOKENS        = int(os.environ.get("GRAPH_MAX_TOKENS", "16000"))
+    DEMOGRAPHER_MAX_TOKENS  = int(os.environ.get("DEMOGRAPHER_MAX_TOKENS", "8000"))
+    PERSONA_MAX_TOKENS      = int(os.environ.get("PERSONA_MAX_TOKENS", "4096"))
+
     # Piani e quote restano attivi sempre (li gestisce l'admin). BILLING_ENABLED mostra agli utenti
     # le pagine "Piani" e "Fatturazione" e i link "Aggiorna piano": spento, l'app non parla di pagamenti.
     # Nessuna integrazione di pagamento nel codice: i campi stripe_* dei modelli restano per il futuro.

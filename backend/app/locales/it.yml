@@ -82,6 +82,9 @@ report:
     confidence_assessment: "Valutazione della Confidenza"
     appendix: "Appendice Metodologica"
     population_composition: "Composizione della popolazione"
+  # Avviso sotto il titolo di un report che il modello non ha completato (report/completeness.py)
+  incomplete:
+    notice: "> **Report incompleto.** Non è stato possibile generare queste sezioni entro il budget di token del modello: {sections}. Le altre sezioni sono complete."
   metrics_table:
     metric: "Metrica"
     value: "Valore"
@@ -99,12 +102,13 @@ report:
     mid_meaning: "l'intensità delle convinzioni è distribuita su più livelli"
     high: "convinzione molto dispersa"
     high_meaning: "l'intensità delle convinzioni è distribuita su tutti i livelli"
+  # Etichette per il lettore delle fasce di convinzione (get_opinion_distribution): il modello le copia nel report
   conviction_buckets:
-    very_low: "convinzione_molto_bassa"
-    low: "convinzione_bassa"
-    medium: "convinzione_media"
-    high: "convinzione_alta"
-    very_high: "convinzione_molto_alta"
+    very_low: "convinzione molto bassa"
+    low: "convinzione bassa"
+    medium: "convinzione media"
+    high: "convinzione alta"
+    very_high: "convinzione molto alta"
   tone_not_stated: "non indicato"
   # Etichette per il lettore delle metriche e dei campi che il modello del report riceve. I nomi
   # tecnici (mean_opinion_strength, opinion_entropy...) solo nell'appendice metodologica.

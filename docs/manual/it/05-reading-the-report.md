@@ -134,3 +134,21 @@ Sezioni tipiche: sintesi, obiezioni principali, argomenti a favore, segmenti esp
 sezioni obbligatorie del template, dinamiche del dibattito, scenari, raccomandazioni, valutazione della confidenza e
 un'appendice con i parametri dell'esecuzione (agenti, round, modelli, template, voci critiche,
 troncamenti). Esporta in Markdown o PDF con i pulsanti sopra il report (Pro ed Enterprise).
+
+## Report incompleti
+
+Il report lo scrive il modello heavy entro un budget di token (`REPORT_MAX_TOKENS`, vedi
+[Operazioni](08-operations.md#budget-di-token-e-modelli-che-ragionano)). Il worker controlla ogni report
+prima di pubblicarlo:
+
+- una risposta che finisce sul budget viene continuata, fino a tre volte; una risposta senza testo (il
+  budget è andato al ragionamento) viene richiesta una volta con il doppio del budget;
+- ogni sezione del formato del report deve esserci, comprese le sezioni del template. Una sezione rimasta
+  a metà alla fine, o mancante, viene richiesta di nuovo (al massimo due volte) e rimessa al suo posto;
+- le metriche della simulazione, la tabella del dibattito e l'appendice metodologica le scrive il codice
+  quando il modello le salta.
+
+Se una sezione manca ancora, il report viene pubblicato con un avviso sotto il titolo, **Report
+incompleto**, che elenca le sezioni mancanti; il worker registra `report_incomplete` con lo stesso elenco.
+Le altre sezioni sono complete. Alzare `REPORT_MAX_TOKENS` o abbassare `REPORT_REASONING_EFFORT` di solito
+risolve per le simulazioni successive.

@@ -24,12 +24,14 @@ from typing import Any
 
 import structlog
 
+from ..config import Config
 from ..core.i18n import DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES, normalize_language, t, t_value, with_directive
 from ..core.llm import get_llm
+from ..core.llm_response import LLMResponse, llm_log_fields
 from ..population.integration import render_subject_card
 from ..simulation.engine import SimulationState
 from ..utils.excerpt import trim_excerpt
-from . import postprocess
+from . import completeness, postprocess
 from .sections import ALWAYS_SECTIONS, SECTION_DESCRIPTIONS, section_title
 from .metrics import compute_all_debate_metrics
 from .stance_metrics import compute_stance_metrics
@@ -503,6 +505,24 @@ Begin now with Step 1.
 """
 
 
+# A reply cut by the token limit (finish_reason=length) is continued in the same conversation
+CONTINUE_PROMPT = (
+    "Your previous message was cut off by the length limit. Continue it exactly where it stopped: do not repeat "
+    "anything you already wrote, do not restart the report or the section, and add no preface or comment."
+)
+# Required sections still missing (or cut short) after the report: asked again, only those
+MISSING_SECTIONS_PROMPT = (
+    "These sections of the report are missing:\n{headings}\n"
+    "Write ONLY these sections now, in this order, each under its heading exactly as written above, following "
+    "the REPORT FORMAT and every rule of the system prompt. Use ONLY data from your OBSERVATIONS. Do not write "
+    "the report title and do not repeat the sections already written."
+)
+
+
+def _finish_reason(response) -> str | None:
+    return getattr(response, "finish_reason", None)
+
+
 @dataclass
 class ReportResult:
     simulation_id: str
@@ -515,6 +535,8 @@ class ReportResult:
     scenario_probabilities: dict[str, float]
     confidence_label: str = ""
     confidence_basis: dict = field(default_factory=dict)
+    # Required sections the model did not write even when asked again: the report carries a visible notice
+    missing_sections: list[str] = field(default_factory=list)
 
 
 class ReportAgent:
@@ -524,6 +546,10 @@ class ReportAgent:
     MIN_TOOL_CALLS = 4
     # Avversari in testa alla lista degli intervistabili, senza riempirla: a 100 agenti sarebbero tutti voci critiche
     MAX_ADVERSARIAL_INTERVIEWABLE = 4
+    # A reply cut by the token limit: continuations in the same conversation, then it is used as it is
+    MAX_CONTINUATIONS = 3
+    # Required sections missing from the report: times they are asked again before the notice
+    SECTION_RETRIES = 2
 
     def __init__(
         self,
@@ -531,12 +557,94 @@ class ReportAgent:
         max_reflection_rounds: int = 3,
         temperature: float = 0.2,   # lowered from 0.4 → reduces creative hallucination
         llm=None,
+        max_tokens: int | None = None,
+        reasoning_effort: str | None = None,
     ):
         self._llm_instance = llm
         self._llm_factory = get_llm
         self.max_tool_calls = max_tool_calls
         self.max_reflection_rounds = max_reflection_rounds
         self.temperature = temperature
+        # One budget for every report call (REPORT_MAX_TOKENS): a tool step stops at "OBSERVATION:" and costs
+        # only what it writes, but the model may write the report in any step. Models that reason by default
+        # spend their reasoning from the same budget, so the effort is sent explicitly (REPORT_REASONING_EFFORT).
+        self.max_tokens = max_tokens or Config.REPORT_MAX_TOKENS
+        self.reasoning_effort = reasoning_effort if reasoning_effort is not None else Config.REPORT_REASONING_EFFORT
+
+    async def _complete(self, messages: list[dict], *, max_tokens: int | None = None,
+                        stop: list[str] | None = None) -> str:
+        """One report call on the heavy tier, with the report budget and reasoning effort."""
+        llm = self._llm_instance or self._llm_factory()
+        return await llm.complete(
+            messages,
+            tier="heavy",
+            temperature=self.temperature,
+            max_tokens=max_tokens or self.max_tokens,
+            stop=stop,
+            reasoning_effort=self.reasoning_effort,
+        )
+
+    async def _call(self, messages: list[dict], lang: str, *, stop: list[str] | None = None) -> LLMResponse:
+        """A report call that is never cut silently. finish_reason=length with no text (the budget went to
+        reasoning): once more with twice the budget. With text: continued in the same conversation, up to
+        MAX_CONTINUATIONS times. The result keeps finish_reason=length if it is still cut."""
+        response = await self._complete(messages, stop=stop)
+        if _finish_reason(response) != "length":
+            return response if isinstance(response, LLMResponse) else LLMResponse(str(response or ""))
+        if not str(response).strip():
+            larger = self.max_tokens * 2
+            log.warning("report_llm_truncated", action="retry_larger_budget", max_tokens=self.max_tokens,
+                        retry_max_tokens=larger, **llm_log_fields(response))
+            try:
+                response = await self._complete(messages, max_tokens=larger, stop=stop)
+            except Exception as e:  # e.g. a budget above the output limit of the model
+                log.warning("report_llm_retry_failed", retry_max_tokens=larger, error=str(e)[:300])
+                return LLMResponse("", finish_reason="length")
+            if _finish_reason(response) != "length" or not str(response).strip():
+                return response if isinstance(response, LLMResponse) else LLMResponse(str(response or ""))
+        text, last = str(response), response
+        for n in range(1, self.MAX_CONTINUATIONS + 1):
+            log.warning("report_llm_truncated", action="continue", continuation=n, chars=len(text),
+                        **llm_log_fields(last))
+            follow = [*messages, {"role": "assistant", "content": text},
+                      {"role": "user", "content": with_directive(CONTINUE_PROMPT, lang)}]
+            last = await self._complete(follow, stop=stop)
+            text = completeness.join_continuation(text, str(last or ""))
+            if _finish_reason(last) != "length":
+                return LLMResponse(text, finish_reason=_finish_reason(last))
+        log.warning("report_llm_still_truncated", continuations=self.MAX_CONTINUATIONS, chars=len(text))
+        return LLMResponse(text, finish_reason="length")
+
+    async def _complete_sections(self, messages: list[dict], report: str, *, truncated: bool,
+                                 sections: list, lang: str, simulation_id: str) -> tuple[str, list]:
+        """The required sections of the report format all present. A report still cut by the token limit loses
+        its last section (written in part); the missing sections are asked again, only those, up to
+        SECTION_RETRIES times, and inserted at their place. Returns (report, sections still missing)."""
+        if truncated:
+            report, dropped = completeness.drop_last_section(report)
+            log.warning("report_truncated_section_dropped", simulation_id=simulation_id, section=dropped)
+        missing = completeness.missing_sections(report, sections)
+        for attempt in range(1, self.SECTION_RETRIES + 1):
+            if not missing:
+                break
+            log.warning("report_sections_missing", simulation_id=simulation_id, attempt=attempt,
+                        sections=[s.key for s in missing])
+            convo = list(messages)
+            while convo and convo[-1]["role"] == "assistant":
+                convo.pop()
+            if report.strip():
+                convo.append({"role": "assistant", "content": report})
+            headings = "\n".join(f"## {s.title}" for s in missing)
+            convo.append({"role": "user", "content": with_directive(
+                MISSING_SECTIONS_PROMPT.format(headings=headings), lang)})
+            response = await self._call(convo, lang)
+            addition = self._extract_report(str(response or ""))
+            if _finish_reason(response) == "length":
+                addition, _ = completeness.drop_last_section(addition)
+            report, added = completeness.merge_sections(report, addition, missing, sections)
+            log.info("report_sections_regenerated", simulation_id=simulation_id, attempt=attempt, added=added)
+            missing = completeness.missing_sections(report, sections)
+        return report, missing
 
     @classmethod
     def _ensure_share_disclosure(cls, report: str, disclosure: str) -> str:
@@ -740,7 +848,7 @@ class ReportAgent:
                 echo_chamber=debate_metrics["echo_chamber_index"].get("score"),
                 diversity_interp=debate_metrics["information_diversity"].get("interpretation"),
             )
-            debate_metrics_block = self._format_debate_metrics(debate_metrics)
+            debate_metrics_block = self._format_debate_metrics(debate_metrics, language)
         except Exception as metrics_err:
             log.warning("debate_metrics_failed", error=str(metrics_err))
             debate_metrics = {}
@@ -772,7 +880,7 @@ class ReportAgent:
         adversarial_count = len(adv_agents) or int((adversarial_post_stats or {}).get("adversarial_agents") or 0)
 
         # Carica template della simulazione (se presente) per sezioni dinamiche + istruzioni extra
-        dynamic_sections_md, extra_instructions, template_id = self._load_template_metadata(
+        dynamic_sections_md, extra_instructions, template_id, template_sections = self._load_template_metadata(
             state.simulation_id, language)
         template_info = self._template_info(template_id, language)
         # Archetypes of the template that are not in the run (left out by the cap on agents): the instructions
@@ -823,19 +931,18 @@ class ReportAgent:
         tool_calls_made = 0
         final_report = ""
         last_response = ""
+        # finish_reason of the reply the report comes from: "length" if it is still cut after the continuations
+        report_finish = None
 
         for iteration in range(self.max_tool_calls + self.max_reflection_rounds):
-            response = await (self._llm_instance or self._llm_factory()).complete(
-                messages,
-                tier="heavy",
-                temperature=self.temperature,
-                max_tokens=2048,
-                stop=["OBSERVATION:"],
-            )
+            response = await self._call(messages, language, stop=["OBSERVATION:"])
+            step_finish = _finish_reason(response)
             # Difesa in profondita': se il modello ha emesso OBSERVATION comunque,
             # tagliamo tutto da li' in poi cosi' il parser lavora su ACTION pulita.
             if "OBSERVATION:" in response:
                 response = response.split("OBSERVATION:")[0].rstrip()
+                step_finish = "stop"
+            response = str(response)
             last_response = response
             messages.append({"role": "assistant", "content": response})
 
@@ -865,15 +972,12 @@ class ReportAgent:
                             f"Start directly with '# {self._report_title(language)}:'.", language
                         ),
                     })
-                    final_response = await (self._llm_instance or self._llm_factory()).complete(
-                        messages,
-                        tier="heavy",
-                        temperature=self.temperature,
-                        max_tokens=16000,
-                    )
+                    final_response = await self._call(messages, language)
                     final_report = self._extract_report(final_response)
+                    report_finish = _finish_reason(final_response)
                 else:
                     final_report = self._extract_report(response)
+                    report_finish = step_finish
                 break
 
             # ── Hard cap on tool calls ──────────────────────────────────────
@@ -886,13 +990,9 @@ class ReportAgent:
                         f"Start directly with '# {self._report_title(language)}:'.", language
                     ),
                 })
-                final_response = await (self._llm_instance or self._llm_factory()).complete(
-                    messages,
-                    tier="heavy",
-                    temperature=self.temperature,
-                    max_tokens=16000,
-                )
+                final_response = await self._call(messages, language)
                 final_report = self._extract_report(final_response)
+                report_finish = _finish_reason(final_response)
                 break
 
             # ── Execute tool call ───────────────────────────────────────────
@@ -909,6 +1009,7 @@ class ReportAgent:
                 # No tool call and no DONE → model may be writing report directly
                 if "# " in response and tool_calls_made >= self.MIN_TOOL_CALLS:
                     final_report = self._extract_report(response)
+                    report_finish = step_finish
                     break
                 else:
                     # Nudge it back on track
@@ -922,6 +1023,19 @@ class ReportAgent:
 
         if not final_report:
             final_report = self._extract_report(last_response)
+        # Every required section present: the one cut short and the missing ones are asked again
+        report_sections = completeness.report_sections(template_sections, language)
+        final_report, missing = await self._complete_sections(
+            messages, final_report, truncated=report_finish == "length", sections=report_sections,
+            lang=language, simulation_id=state.simulation_id)
+        if final_report.strip() and not re.search(r"^#\s", final_report, re.M):
+            final_report = f"# {self._report_title(language)}: {state.topic}\n\n{final_report}"
+        # The appendix is text of the code: added when the model never wrote it
+        final_report, appendix_added = completeness.ensure_appendix(
+            final_report, self._appendix(language, template_id, archetypes_limitation, top3_share(state),
+                                         appendix_parameters), language)
+        if appendix_added:
+            log.warning("report_appendix_added", simulation_id=state.simulation_id)
         consensus = tool_executor._compute_consensus() or {}
         metrics_table = postprocess.simulation_metrics_table({
             "rounds": state.current_round, "agents": len(state.agents), "posts": totals["posts"],
@@ -967,6 +1081,13 @@ class ReportAgent:
             },
         )
 
+        # Sections still missing (the code adds metrics, debate table and appendix itself): a visible notice
+        incomplete = [s for s in missing if s.key not in completeness.CODE_FALLBACK]
+        if incomplete:
+            final_report = completeness.add_incomplete_notice(final_report, incomplete, language)
+            log.warning("report_incomplete", simulation_id=state.simulation_id,
+                        missing_sections=[s.key for s in incomplete])
+
         # Post-process
         key_findings = self._extract_findings(final_report)
         scenarios = self._extract_scenarios(final_report)
@@ -989,6 +1110,7 @@ class ReportAgent:
             scenario_probabilities=scenarios,
             confidence_label=confidence["label"],
             confidence_basis=confidence,
+            missing_sections=[s.key for s in incomplete],
         )
 
     # ── Helpers ────────────────────────────────────────────────────────────
@@ -1083,6 +1205,9 @@ class ReportAgent:
         report, localized = postprocess.localize_field_names(report, lang)
         if localized:
             log.info("report_field_names_localized", replacements=localized)
+        report, keys = postprocess.localize_internal_keys(report, lang)
+        if keys:
+            log.warning("report_internal_keys_localized", keys=keys)
         # 5
         before = report
         report, adv_fix = postprocess.fix_adversarial_claims(
@@ -1188,6 +1313,10 @@ class ReportAgent:
         report, counts = postprocess.fix_list_counts(report)
         for found in counts:
             log.warning("report_list_count_fixed", **found)
+        # Safety net: no snake_case name left in the prose (the appendix keeps the raw field names)
+        report, humanized = postprocess.humanize_snake_case(report)
+        if humanized:
+            log.warning("report_internal_key_humanized", keys=humanized)
         return report
 
     @staticmethod
@@ -1275,10 +1404,10 @@ class ReportAgent:
         return info
 
     def _load_template_metadata(self, simulation_id: str,
-                                lang: str = DEFAULT_LANGUAGE) -> tuple[str, str, str | None]:
+                                lang: str = DEFAULT_LANGUAGE) -> tuple[str, str, str | None, list[str]]:
         """
         Legge template_id della simulazione dal DB, carica il template dal
-        registry, ritorna (dynamic_sections_markdown, extra_instructions, template_id).
+        registry, ritorna (dynamic_sections_markdown, extra_instructions, template_id, mandatory_sections).
         Senza template restano le sezioni di ALWAYS_SECTIONS, extra vuoto e template_id None.
         """
         sections: list[str] = []
@@ -1315,33 +1444,35 @@ class ReportAgent:
                  template_id=template_id,
                  sections=dynamic_md.count("## "),
                  has_extra_instructions=bool(extra))
-        return dynamic_md, extra, template_id
+        return dynamic_md, extra, template_id, sections
 
     @staticmethod
-    def _format_debate_metrics(metrics: dict) -> str:
-        """Formatta le debate dynamics metrics come blocco leggibile dal ReportAgent."""
+    def _format_debate_metrics(metrics: dict, lang: str = DEFAULT_LANGUAGE) -> str:
+        """Formatta le debate dynamics metrics come blocco leggibile dal ReportAgent. La lettura di ogni metrica
+        e' l'etichetta del lettore (debate.labels), mai la chiave interna ("polarization_active")."""
         if not metrics:
             return "(no data)"
+        label = lambda m: postprocess._interp_label(m.get("interpretation"), lang)  # noqa: E731
         parts = []
         pd = metrics.get("polarization_delta", {})
         if pd.get("interpretation") != "insufficient_data":
             parts.append(
                 f"- POLARIZATION_DELTA: initial={pd.get('initial_polarization')}, "
                 f"final={pd.get('final_polarization')}, delta={pd.get('delta')} "
-                f"[{pd.get('interpretation')}]\n  {pd.get('description','')}"
+                f"[{label(pd)}]\n  {pd.get('description','')}"
             )
         ec = metrics.get("echo_chamber_index", {})
         if ec.get("score") is not None:
             parts.append(
                 f"- ECHO_CHAMBER_INDEX: score={ec.get('score')} (method={ec.get('method')}) "
-                f"[{ec.get('interpretation')}]\n  {ec.get('description','')}"
+                f"[{label(ec)}]\n  {ec.get('description','')}"
             )
         inf = metrics.get("information_diversity", {})
         if inf.get("interpretation") != "insufficient_data":
             parts.append(
                 f"- INFORMATION_DIVERSITY: first_half_avg={inf.get('first_half_keywords_avg')}, "
                 f"second_half_avg={inf.get('second_half_keywords_avg')}, delta_pct={inf.get('delta_pct')}% "
-                f"[{inf.get('interpretation')}]\n  {inf.get('description','')}"
+                f"[{label(inf)}]\n  {inf.get('description','')}"
             )
         return "\n".join(parts) if parts else "(insufficient data)"
 

@@ -82,6 +82,9 @@ report:
     confidence_assessment: "Confidence Assessment"
     appendix: "Methodological Appendix"
     population_composition: "Population Composition"
+  # Notice under the title of a report the model could not complete (report/completeness.py)
+  incomplete:
+    notice: "> **Incomplete report.** These sections could not be generated within the token budget of the model: {sections}. The other sections are complete."
   metrics_table:
     metric: "Metric"
     value: "Value"
@@ -99,12 +102,13 @@ report:
     mid_meaning: "conviction intensity is spread over several levels"
     high: "widely spread conviction"
     high_meaning: "conviction intensity is spread over all levels"
+  # Reader labels of the conviction buckets (get_opinion_distribution): the model copies them into the report
   conviction_buckets:
-    very_low: "conviction_very_low"
-    low: "conviction_low"
-    medium: "conviction_medium"
-    high: "conviction_high"
-    very_high: "conviction_very_high"
+    very_low: "very low conviction"
+    low: "low conviction"
+    medium: "medium conviction"
+    high: "high conviction"
+    very_high: "very high conviction"
   tone_not_stated: "not stated"
   # Reader labels of the metrics and fields the report model receives. Raw field names
   # (mean_opinion_strength, opinion_entropy...) only in the methodology appendix.

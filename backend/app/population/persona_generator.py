@@ -28,6 +28,7 @@ from ..agents.agent import (
     PERSONALITY_AXES,
 )
 from ..agents.stance import SPAWN_ROUND, STANCE_ENUM, record_stance
+from ..config import Config
 from ..core.i18n import normalize_language, with_directive
 from ..core.llm import get_llm, get_llm_for_project
 from ..memory.agent_memory import AgentMemory
@@ -273,7 +274,7 @@ class PersonaGenerator:
                     messages=msgs,
                     tier=self._tier,
                     temperature=self._diversity_temperature,
-                    max_tokens=1536,
+                    max_tokens=Config.PERSONA_MAX_TOKENS,
                     json_mode=True,
                 )
 

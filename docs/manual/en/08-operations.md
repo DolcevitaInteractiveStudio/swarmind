@@ -109,6 +109,32 @@ memories (`sim_<id>_memory`), deleted when the simulation completes, fails or is
 retries failed deletions at start-up. To remove collections left by old versions, use
 `flask chroma-cleanup` (runbook below).
 
+## Token budgets and reasoning models
+
+Models that reason by default (Anthropic Opus and Sonnet 4.5 and later via OpenRouter, and others)
+spend their reasoning tokens from the same `max_tokens` budget as the text they write. The budgets
+of the heavy-tier calls are settings in `.env`:
+
+| Setting | Default | Used by |
+|---|---|---|
+| `REPORT_MAX_TOKENS` | 16000 | every report call: tool steps, the report, its continuations, the regenerated sections |
+| `REPORT_REASONING_EFFORT` | `low` | reasoning effort of the report calls |
+| `HEAVY_REASONING_EFFORT` | `low` | reasoning effort of graph extraction, Demographer and personas |
+| `GRAPH_MAX_TOKENS` | 16000 | graph extraction, per chunk of the brief |
+| `DEMOGRAPHER_MAX_TOKENS` | 8000 | the Demographer (population composition) |
+| `PERSONA_MAX_TOKENS` | 4096 | one persona |
+
+The effort (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`) is sent to OpenRouter explicitly;
+`default` sends nothing and keeps the model's own default. A model that refuses `none` gets `low`.
+Anthropic, OpenAI and Groq connections keep the model's default. Keep each budget within the output
+limit of the heavy model: a larger value is refused by the provider.
+
+The worker logs every call as `llm_call_ok` with `max_tokens`, `finish_reason`, `reasoning_tokens`
+and `reasoning_mode` (`effort=low`, or `provider_default` when no effort was sent). A report call that
+still ends with `finish_reason=length` is continued; see
+[Reading the report](05-reading-the-report.md#incomplete-reports). After changing a setting, restart
+the backend and the worker.
+
 ## Monitoring
 
 - `docker compose ps` and `docker compose logs -f backend worker` (structured `event key=value` logs).
