@@ -436,6 +436,89 @@ def ensure_metrics_table(md: str, table: str, lang: str = DEFAULT_LANGUAGE) -> t
 _ITALIAN_HOMOGRAPHS = {"positive", "negative"}
 
 
+# ── Chiavi interne -> etichette del lettore ───────────────────────────────────
+# Valori interni in snake_case che il modello puo' copiare nel report: le fasce di convinzione (anche nelle
+# forme scritte dai cataloghi di prima, "conviction_very_high", "convinzione_molto_alta"), le letture delle
+# metriche del dibattito ("polarization_active"), gli stati emotivi composti ("critical_neutral").
+
+# Not part of a path, a URL, an e-mail or a dotted name ("file.name_x"); a full stop after it is fine
+_SNAKE_CASE = re.compile(r"(?<![\w/.@-])`?([a-z]+(?:_[a-z]+)+)`?(?![\w/@-]|\.\w)")
+_LEGACY_BUCKET_LABELS = {
+    "conviction_very_low": "very_low", "conviction_low": "low", "conviction_medium": "medium",
+    "conviction_high": "high", "conviction_very_high": "very_high",
+    "convinzione_molto_bassa": "very_low", "convinzione_bassa": "low", "convinzione_media": "medium",
+    "convinzione_alta": "high", "convinzione_molto_alta": "very_high",
+}
+
+
+def internal_key_labels(lang: str = DEFAULT_LANGUAGE) -> dict[str, str]:
+    """Chiave interna in snake_case -> etichetta del lettore nella lingua del report."""
+    buckets = t_value(lang, "report.conviction_buckets")
+    labels = {key: buckets[bucket] for key, bucket in _LEGACY_BUCKET_LABELS.items()}
+    labels.update({key: buckets[key] for key in buckets if "_" in key})
+    labels.update({key: label[:1].lower() + label[1:] for key, label in t_value(lang, "debate.labels").items()})
+    labels.update({key: label for key, label in t_value(lang, "report.emotional_states").items() if "_" in key})
+    return labels
+
+
+def _sentence_start(text: str, at: int) -> bool:
+    before = text[:at].rstrip(" *_\"'«(")
+    return not before or before[-1] in ".!?-" or bool(re.search(r"^\s*(?:[-*+]|\d+[.)])$", before))
+
+
+def _prose_spans(md: str):
+    """(indice della riga, riga) delle righe di prosa: fuori da codice e appendice metodologica."""
+    lines = md.split("\n")
+    appendix = section_bounds(lines, APPENDIX_HEADING_RE)
+    in_code = False
+    for i, line in enumerate(lines):
+        if line.strip().startswith("```"):
+            in_code = not in_code
+            continue
+        if in_code or (appendix and appendix[0] <= i < appendix[1]):
+            continue
+        yield i, line
+    return
+
+
+def localize_internal_keys(md: str, lang: str = DEFAULT_LANGUAGE) -> tuple[str, list[str]]:
+    """Fuori dall'appendice e dal codice le chiavi interne note diventano le etichette del lettore
+    (internal_key_labels); a inizio frase con la maiuscola. Ritorna (report, chiavi sostituite)."""
+    if not md:
+        return md, []
+    labels = internal_key_labels(lang)
+    lines = md.split("\n")
+    found: list[str] = []
+    for i, line in _prose_spans(md):
+        def repl(m):
+            key = m.group(1)
+            if key not in labels:
+                return m.group(0)
+            found.append(key)
+            label = labels[key]
+            return label[:1].upper() + label[1:] if _sentence_start(m.string, m.start()) else label
+        lines[i] = _SNAKE_CASE.sub(repl, line)
+    return ("\n".join(lines), found) if found else (md, [])
+
+
+def humanize_snake_case(md: str) -> tuple[str, list[str]]:
+    """Ultima rete: un nome in snake_case rimasto nella prosa (fuori da appendice, codice, link) diventa
+    parole ("stance_shift_share" -> "stance shift share"). Ritorna (report, nomi)."""
+    if not md:
+        return md, []
+    lines = md.split("\n")
+    found: list[str] = []
+    for i, line in _prose_spans(md):
+        if "://" in line:
+            continue
+
+        def repl(m):
+            found.append(m.group(1))
+            return m.group(1).replace("_", " ")
+        lines[i] = _SNAKE_CASE.sub(repl, line)
+    return ("\n".join(lines), found) if found else (md, [])
+
+
 def localize_field_names(md: str, lang: str = DEFAULT_LANGUAGE) -> tuple[str, int]:
     """Fuori dall'appendice metodologica i nomi dei campi (mean_opinion_strength, opinion_entropy...)
     diventano le parole del lettore (report.field_words); in un report italiano anche i valori inglesi

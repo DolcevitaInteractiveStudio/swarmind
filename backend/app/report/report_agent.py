@@ -848,7 +848,7 @@ class ReportAgent:
                 echo_chamber=debate_metrics["echo_chamber_index"].get("score"),
                 diversity_interp=debate_metrics["information_diversity"].get("interpretation"),
             )
-            debate_metrics_block = self._format_debate_metrics(debate_metrics)
+            debate_metrics_block = self._format_debate_metrics(debate_metrics, language)
         except Exception as metrics_err:
             log.warning("debate_metrics_failed", error=str(metrics_err))
             debate_metrics = {}
@@ -1205,6 +1205,9 @@ class ReportAgent:
         report, localized = postprocess.localize_field_names(report, lang)
         if localized:
             log.info("report_field_names_localized", replacements=localized)
+        report, keys = postprocess.localize_internal_keys(report, lang)
+        if keys:
+            log.warning("report_internal_keys_localized", keys=keys)
         # 5
         before = report
         report, adv_fix = postprocess.fix_adversarial_claims(
@@ -1310,6 +1313,10 @@ class ReportAgent:
         report, counts = postprocess.fix_list_counts(report)
         for found in counts:
             log.warning("report_list_count_fixed", **found)
+        # Safety net: no snake_case name left in the prose (the appendix keeps the raw field names)
+        report, humanized = postprocess.humanize_snake_case(report)
+        if humanized:
+            log.warning("report_internal_key_humanized", keys=humanized)
         return report
 
     @staticmethod
@@ -1440,30 +1447,32 @@ class ReportAgent:
         return dynamic_md, extra, template_id, sections
 
     @staticmethod
-    def _format_debate_metrics(metrics: dict) -> str:
-        """Formatta le debate dynamics metrics come blocco leggibile dal ReportAgent."""
+    def _format_debate_metrics(metrics: dict, lang: str = DEFAULT_LANGUAGE) -> str:
+        """Formatta le debate dynamics metrics come blocco leggibile dal ReportAgent. La lettura di ogni metrica
+        e' l'etichetta del lettore (debate.labels), mai la chiave interna ("polarization_active")."""
         if not metrics:
             return "(no data)"
+        label = lambda m: postprocess._interp_label(m.get("interpretation"), lang)  # noqa: E731
         parts = []
         pd = metrics.get("polarization_delta", {})
         if pd.get("interpretation") != "insufficient_data":
             parts.append(
                 f"- POLARIZATION_DELTA: initial={pd.get('initial_polarization')}, "
                 f"final={pd.get('final_polarization')}, delta={pd.get('delta')} "
-                f"[{pd.get('interpretation')}]\n  {pd.get('description','')}"
+                f"[{label(pd)}]\n  {pd.get('description','')}"
             )
         ec = metrics.get("echo_chamber_index", {})
         if ec.get("score") is not None:
             parts.append(
                 f"- ECHO_CHAMBER_INDEX: score={ec.get('score')} (method={ec.get('method')}) "
-                f"[{ec.get('interpretation')}]\n  {ec.get('description','')}"
+                f"[{label(ec)}]\n  {ec.get('description','')}"
             )
         inf = metrics.get("information_diversity", {})
         if inf.get("interpretation") != "insufficient_data":
             parts.append(
                 f"- INFORMATION_DIVERSITY: first_half_avg={inf.get('first_half_keywords_avg')}, "
                 f"second_half_avg={inf.get('second_half_keywords_avg')}, delta_pct={inf.get('delta_pct')}% "
-                f"[{inf.get('interpretation')}]\n  {inf.get('description','')}"
+                f"[{label(inf)}]\n  {inf.get('description','')}"
             )
         return "\n".join(parts) if parts else "(insufficient data)"
 
