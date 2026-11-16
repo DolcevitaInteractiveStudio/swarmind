@@ -82,6 +82,9 @@ report:
     confidence_assessment: "Valutazione della Confidenza"
     appendix: "Appendice Metodologica"
     population_composition: "Composizione della popolazione"
+  # Avviso sotto il titolo di un report che il modello non ha completato (report/completeness.py)
+  incomplete:
+    notice: "> **Report incompleto.** Non è stato possibile generare queste sezioni entro il budget di token del modello: {sections}. Le altre sezioni sono complete."
   metrics_table:
     metric: "Metrica"
     value: "Valore"

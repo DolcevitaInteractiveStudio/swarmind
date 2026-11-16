@@ -134,3 +134,21 @@ Typical sections: summary, main objections, supporting arguments, exposed segmen
 template's mandatory sections, debate dynamics, scenarios, recommendations, confidence assessment and
 an appendix with the parameters of the run (agents, rounds, models, template, critical voices,
 truncations). Export to Markdown or PDF with the buttons above the report (Pro and Enterprise).
+
+## Incomplete reports
+
+The report is written by the heavy model within a token budget (`REPORT_MAX_TOKENS`, see
+[Operations](08-operations.md#token-budgets-and-reasoning-models)). The worker checks every report
+before publishing it:
+
+- a reply that ends on the budget is continued, up to three times; a reply with no text at all (the
+  budget went to reasoning) is asked again once with twice the budget;
+- every section of the report format must be there, the template sections included. A section cut
+  short at the end, or missing, is asked again (twice at most) and put back in its place;
+- the simulation metrics, the debate table and the methodological appendix are written by the code
+  when the model leaves them out.
+
+If a section is still missing, the report is published with a notice under the title, **Incomplete
+report**, that names the missing sections; the worker logs `report_incomplete` with the same list.
+The other sections are complete. Raising `REPORT_MAX_TOKENS` or lowering `REPORT_REASONING_EFFORT`
+usually solves it for the next simulations.

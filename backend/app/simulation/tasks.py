@@ -791,6 +791,8 @@ def generate_report_task(
             "confidence_basis": result.confidence_basis,
             "scenario_probabilities": result.scenario_probabilities,
             "tool_calls_made": result.tool_calls_made,
+            # Required sections the model did not write: the report shows a notice
+            "missing_sections": result.missing_sections,
             "generated_at": time.time(),
         })
 
